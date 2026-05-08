@@ -14,7 +14,7 @@ Before spawning sub-agents, write a user-facing explanation of the frontend prob
 - The developer callers that will cross the new Seam
 - The current caller obligations that make the Module shallow
 - The loading, error, empty, pending, and accessibility states the Interface must account for
-- The data/query/form Adapters involved
+- The data/query/form Adapters involved, and which category they fall into (see [DEEPENING.md](DEEPENING.md))
 - A rough illustrative JSX/TypeScript sketch to ground the constraints — not a proposal, just a way to make the constraints concrete
 
 Show this to the user, then immediately proceed to Step 2. The user reads and thinks while the sub-agents work in parallel.
@@ -23,7 +23,7 @@ Show this to the user, then immediately proceed to Step 2. The user reads and th
 
 Spawn 3+ sub-agents in parallel using the Agent tool. Each must produce a **radically different** Interface for the deepened frontend Module.
 
-Prompt each sub-agent with a separate technical brief: file paths, current caller obligations, data sources, form/query/fetcher behaviour, accessibility constraints, tests that should survive, and what sits behind the Seam. Give each agent a different design constraint:
+Prompt each sub-agent with a separate technical brief: file paths, current caller obligations, data sources, dependency category from [DEEPENING.md](DEEPENING.md), form/query/fetcher behaviour, accessibility constraints, tests that should survive, and what sits behind the Seam. Give each agent a different design constraint:
 
 - Agent 1: "Minimize the Interface — aim for 1–3 props or entry points max. Maximise Leverage per prop."
 - Agent 2: "Maximise flexibility — support extension points, custom rendering, and future variants without leaking the Implementation."
@@ -37,7 +37,7 @@ Each sub-agent outputs:
 1. Interface: props, hook params/returns, invariants, ordering, loading/error/empty states, accessibility obligations, and error modes
 2. Usage example showing how callers use it
 3. What the Implementation hides behind the Seam
-4. Adapter strategy for data, form submission, browser APIs, design-system primitives, or test fakes
+4. Dependency strategy and Adapters for data, form submission, browser APIs, design-system primitives, or test fakes (see [DEEPENING.md](DEEPENING.md))
 5. Trade-offs — where Leverage is high, where the Module remains thin
 
 ### 3. Present and compare
