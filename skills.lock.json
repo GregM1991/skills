@@ -1,0 +1,238 @@
+{
+  "schemaVersion": 1,
+  "lastAudited": "2026-05-13",
+  "notes": "Tracks upstream-identifiable repo skills only. Explicitly excluded skills are listed under excludedSkills and are not installable entries.",
+  "skills": [
+    {
+      "name": "accessibility",
+      "source": "skills.sh likely match",
+      "upstream": {
+        "repo": "Addy Osmani/web-quality-skills family",
+        "ref": "accessibility",
+        "status": "plausible-match"
+      },
+      "localPath": "accessibility",
+      "lastAudited": "2026-05-13"
+    },
+    {
+      "name": "best-practices",
+      "source": "skills.sh likely match",
+      "upstream": {
+        "repo": "Addy Osmani/web-quality-skills family",
+        "ref": "best-practices",
+        "status": "likely-match"
+      },
+      "localPath": "best-practices",
+      "lastAudited": "2026-05-13"
+    },
+    {
+      "name": "coding-agent",
+      "source": "OpenClaw-derived",
+      "upstream": {
+        "repo": "openclaw/openclaw",
+        "ref": "skills/coding-agent",
+        "status": "installed-from-upstream"
+      },
+      "localPath": "coding-agent",
+      "lastAudited": "2026-05-13"
+    },
+    {
+      "name": "core-web-vitals",
+      "source": "skills.sh likely match",
+      "upstream": {
+        "repo": "Addy Osmani/web-quality-skills family",
+        "ref": "core-web-vitals",
+        "status": "likely-match"
+      },
+      "localPath": "core-web-vitals",
+      "lastAudited": "2026-05-13"
+    },
+    {
+      "name": "create-skill",
+      "source": "skills.sh match",
+      "upstream": {
+        "repo": "siviter-xyz/dot-agent",
+        "ref": "create-skill",
+        "status": "matched"
+      },
+      "localPath": "create-skill",
+      "lastAudited": "2026-05-13"
+    },
+    {
+      "name": "diagnose",
+      "source": "skills.sh match",
+      "upstream": {
+        "repo": "mattpocock/skills",
+        "ref": "diagnose",
+        "status": "matched"
+      },
+      "localPath": "diagnose",
+      "lastAudited": "2026-05-13"
+    },
+    {
+      "name": "frontend-design",
+      "source": "skills.sh likely match",
+      "upstream": {
+        "repo": "skills.sh directory candidates",
+        "ref": "frontend-design",
+        "status": "likely-match"
+      },
+      "localPath": "frontend-design",
+      "lastAudited": "2026-05-13"
+    },
+    {
+      "name": "grill-with-docs",
+      "source": "skills.sh match",
+      "upstream": {
+        "repo": "mattpocock/skills",
+        "ref": "grill-with-docs",
+        "status": "matched"
+      },
+      "localPath": "grill-with-docs",
+      "lastAudited": "2026-05-13"
+    },
+    {
+      "name": "improve-codebase-architecture",
+      "source": "skills.sh match",
+      "upstream": {
+        "repo": "mattpocock/skills",
+        "ref": "improve-codebase-architecture",
+        "status": "matched"
+      },
+      "localPath": "improve-codebase-architecture",
+      "lastAudited": "2026-05-13"
+    },
+    {
+      "name": "prototype",
+      "source": "skills.sh match",
+      "upstream": {
+        "repo": "mattpocock/skills",
+        "ref": "prototype",
+        "status": "matched"
+      },
+      "localPath": "prototype",
+      "lastAudited": "2026-05-13"
+    },
+    {
+      "name": "security-review",
+      "source": "skills.sh/GitHub upstream",
+      "upstream": {
+        "repo": "getsentry/skills",
+        "ref": "security-review",
+        "status": "installed-from-upstream"
+      },
+      "localPath": "security-review",
+      "lastAudited": "2026-05-13"
+    },
+    {
+      "name": "setup-matt-pocock-skills",
+      "source": "skills.sh match",
+      "upstream": {
+        "repo": "mattpocock/skills",
+        "ref": "setup-matt-pocock-skills",
+        "status": "matched"
+      },
+      "localPath": "setup-matt-pocock-skills",
+      "lastAudited": "2026-05-13"
+    },
+    {
+      "name": "tdd",
+      "source": "skills.sh match + existing workflow",
+      "upstream": {
+        "repo": "mattpocock/skills",
+        "ref": "tdd",
+        "status": "matched"
+      },
+      "localPath": "tdd",
+      "lastAudited": "2026-05-13"
+    },
+    {
+      "name": "to-issues",
+      "source": "skills.sh match",
+      "upstream": {
+        "repo": "mattpocock/skills",
+        "ref": "to-issues",
+        "status": "matched"
+      },
+      "localPath": "to-issues",
+      "lastAudited": "2026-05-13"
+    },
+    {
+      "name": "to-prd",
+      "source": "skills.sh match",
+      "upstream": {
+        "repo": "mattpocock/skills",
+        "ref": "to-prd",
+        "status": "matched"
+      },
+      "localPath": "to-prd",
+      "lastAudited": "2026-05-13"
+    },
+    {
+      "name": "triage",
+      "source": "skills.sh match",
+      "upstream": {
+        "repo": "mattpocock/skills",
+        "ref": "triage",
+        "status": "matched"
+      },
+      "localPath": "triage",
+      "lastAudited": "2026-05-13"
+    },
+    {
+      "name": "web-quality-audit",
+      "source": "skills.sh likely match",
+      "upstream": {
+        "repo": "Addy Osmani/web-quality-skills family",
+        "ref": "web-quality-audit",
+        "status": "likely-match"
+      },
+      "localPath": "web-quality-audit",
+      "lastAudited": "2026-05-13"
+    },
+    {
+      "name": "write-docs",
+      "source": "skills.sh/GitHub upstream",
+      "upstream": {
+        "repo": "michalvavra/agents",
+        "ref": "write-docs",
+        "status": "installed-from-upstream"
+      },
+      "localPath": "write-docs",
+      "lastAudited": "2026-05-13"
+    },
+    {
+      "name": "zoom-out",
+      "source": "skills.sh match",
+      "upstream": {
+        "repo": "mattpocock/skills",
+        "ref": "zoom-out",
+        "status": "matched"
+      },
+      "localPath": "zoom-out",
+      "lastAudited": "2026-05-13"
+    }
+  ],
+  "excludedSkills": [
+    {
+      "name": "api-design",
+      "status": "excluded",
+      "reason": "User removed; do not migrate or install."
+    },
+    {
+      "name": "github-workflows",
+      "status": "excluded",
+      "reason": "User removed; do not migrate or install."
+    },
+    {
+      "name": "create-workflow",
+      "status": "excluded",
+      "reason": "GSD-specific workflow authoring skill removed from runtime."
+    },
+    {
+      "name": "openclaw-config",
+      "status": "excluded",
+      "reason": "Deprecated/obsolete OpenClaw config skill removed from machine."
+    }
+  ]
+}
