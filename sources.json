@@ -1,0 +1,323 @@
+{
+  "$schemaVersion": 1,
+  "$comment": "Input data for scripts/sync-upstream.ts (written in step 5). Do not hand-edit lastSyncedAt or resolvedCommit; the sync script owns those two fields and rewrites this file after every run. Vendor destination for every skill is skills/vendor/<owner>/<skill name>/. Licences are declared once per source with licensePaths.",
+  "vendorRoot": "skills/vendor",
+  "sources": [
+    {
+      "id": "addyosmani-web-quality-skills",
+      "description": "Two skills from one repo: accessibility and core-web-vitals.",
+      "owner": "addyosmani",
+      "repoName": "web-quality-skills",
+      "url": "https://github.com/addyosmani/web-quality-skills",
+      "ref": "HEAD",
+      "licensePaths": [
+        "LICENSE"
+      ],
+      "lastSyncedAt": "2026-08-24T00:35:46.843Z",
+      "resolvedCommit": "95d6e255afe1596b557d7a8498517884438f5b3a",
+      "mode": "explicit",
+      "skills": [
+        {
+          "name": "accessibility",
+          "paths": [
+            {
+              "from": "skills/accessibility",
+              "to": "."
+            }
+          ]
+        },
+        {
+          "name": "core-web-vitals",
+          "paths": [
+            {
+              "from": "skills/core-web-vitals",
+              "to": "."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vercel-labs-agent-browser",
+      "description": "Two-path merge: SKILL.md from skills/agent-browser, references and templates from skill-data/core.",
+      "owner": "vercel-labs",
+      "repoName": "agent-browser",
+      "url": "https://github.com/vercel-labs/agent-browser",
+      "ref": "HEAD",
+      "licensePaths": [
+        "LICENSE"
+      ],
+      "lastSyncedAt": "2026-08-24T00:35:46.843Z",
+      "resolvedCommit": "f9a6cc34212340dad62b114559f7a306c4be0707",
+      "mode": "explicit",
+      "skills": [
+        {
+          "name": "agent-browser",
+          "paths": [
+            {
+              "from": "skills/agent-browser/SKILL.md",
+              "to": "SKILL.md"
+            },
+            {
+              "from": "skill-data/core/references",
+              "to": "references"
+            },
+            {
+              "from": "skill-data/core/templates",
+              "to": "templates"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "intellectronica-agent-skills",
+      "description": "One skill: anki-connect.",
+      "owner": "intellectronica",
+      "repoName": "agent-skills",
+      "url": "https://github.com/intellectronica/agent-skills",
+      "ref": "HEAD",
+      "licensePaths": [
+        "LICENSE.txt"
+      ],
+      "lastSyncedAt": "2026-08-24T00:35:46.843Z",
+      "resolvedCommit": "9b0e00ad1b941165e2506545bbfddafa34cf2cb8",
+      "mode": "explicit",
+      "skills": [
+        {
+          "name": "anki-connect",
+          "paths": [
+            {
+              "from": "skills/anki-connect",
+              "to": "."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "davis7dotsh-better-context",
+      "description": "One skill: btca-cli.",
+      "owner": "davis7dotsh",
+      "repoName": "better-context",
+      "url": "https://github.com/davis7dotsh/better-context",
+      "ref": "HEAD",
+      "licensePaths": [
+        "LICENSE.md"
+      ],
+      "lastSyncedAt": "2026-08-24T00:35:46.843Z",
+      "resolvedCommit": "864e5ba452566c318d60f75229882233b2a5c120",
+      "mode": "explicit",
+      "skills": [
+        {
+          "name": "btca-cli",
+          "paths": [
+            {
+              "from": "skills/btca-cli",
+              "to": "."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fallow-rs-fallow-skills",
+      "description": "One skill: fallow. Upstream path is nested under a top-level fallow/ folder.",
+      "owner": "fallow-rs",
+      "repoName": "fallow-skills",
+      "url": "https://github.com/fallow-rs/fallow-skills",
+      "ref": "HEAD",
+      "licensePaths": [
+        "LICENSE"
+      ],
+      "lastSyncedAt": "2026-08-24T00:35:46.843Z",
+      "resolvedCommit": "ae11d303a51262a6017f9ee4626a4777565eb374",
+      "mode": "explicit",
+      "skills": [
+        {
+          "name": "fallow",
+          "paths": [
+            {
+              "from": "fallow/skills/fallow",
+              "to": "."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vercel-labs-skills",
+      "description": "One skill: find-skills. Different repo from vercel-labs-agent-browser though same owner.",
+      "owner": "vercel-labs",
+      "repoName": "skills",
+      "url": "https://github.com/vercel-labs/skills",
+      "ref": "HEAD",
+      "licensePaths": [
+        "LICENSE"
+      ],
+      "lastSyncedAt": "2026-08-24T00:35:46.843Z",
+      "resolvedCommit": "435076e78988e1e6ec40d00b0b1d76bdbbc5419a",
+      "mode": "explicit",
+      "skills": [
+        {
+          "name": "find-skills",
+          "paths": [
+            {
+              "from": "skills/find-skills",
+              "to": "."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pbakaus-impeccable",
+      "description": "One skill: impeccable. Uses upstream's generated universal skill tree.",
+      "owner": "pbakaus",
+      "repoName": "impeccable",
+      "url": "https://github.com/pbakaus/impeccable",
+      "ref": "HEAD",
+      "licensePaths": [
+        "LICENSE"
+      ],
+      "lastSyncedAt": "2026-08-24T00:35:46.843Z",
+      "resolvedCommit": "c39b6425fa54a093749b9a236adcd003818167c1",
+      "mode": "explicit",
+      "skills": [
+        {
+          "name": "impeccable",
+          "paths": [
+            {
+              "from": ".agents/skills/impeccable",
+              "to": "."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cursor-plugins",
+      "description": "One skill: pr-review-canvas.",
+      "owner": "cursor",
+      "repoName": "plugins",
+      "url": "https://github.com/cursor/plugins",
+      "ref": "HEAD",
+      "licensePaths": [
+        "cursor-team-kit/LICENSE"
+      ],
+      "lastSyncedAt": "2026-08-24T00:35:46.843Z",
+      "resolvedCommit": "46125561306434d8a1d7745d540d8932ab0cd2a2",
+      "mode": "explicit",
+      "skills": [
+        {
+          "name": "pr-review-canvas",
+          "paths": [
+            {
+              "from": "cursor-team-kit/skills/pr-review-canvas",
+              "to": "."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "poteto-plugins",
+      "description": "One skill: unslop.",
+      "owner": "poteto",
+      "repoName": "plugins",
+      "url": "https://github.com/poteto/plugins",
+      "ref": "HEAD",
+      "licensePaths": [
+        "pstack/LICENSE"
+      ],
+      "lastSyncedAt": "2026-08-24T00:35:46.843Z",
+      "resolvedCommit": "74dd2291e8e37b12fd6dc49b2acbd655c6bdaf12",
+      "mode": "explicit",
+      "skills": [
+        {
+          "name": "unslop",
+          "paths": [
+            {
+              "from": "pstack/skills/unslop",
+              "to": "."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "getsentry-skills",
+      "description": "One skill: security-review.",
+      "owner": "getsentry",
+      "repoName": "skills",
+      "url": "https://github.com/getsentry/skills",
+      "ref": "HEAD",
+      "licensePaths": [
+        "LICENSE"
+      ],
+      "lastSyncedAt": "2026-08-24T00:35:46.843Z",
+      "resolvedCommit": "6abccd60c704f669423d6a06ff0809fa39513ce8",
+      "mode": "explicit",
+      "skills": [
+        {
+          "name": "security-review",
+          "paths": [
+            {
+              "from": "skills/security-review",
+              "to": "."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "nousresearch-hermes-agent",
+      "description": "One skill: youtube-content, nested under a media category in upstream.",
+      "owner": "NousResearch",
+      "repoName": "hermes-agent",
+      "url": "https://github.com/NousResearch/hermes-agent",
+      "ref": "HEAD",
+      "licensePaths": [
+        "LICENSE"
+      ],
+      "lastSyncedAt": "2026-08-24T00:35:46.843Z",
+      "resolvedCommit": "0c1f1d2fe54f5f1f4c2df2c8a908a8932138bb2a",
+      "mode": "explicit",
+      "skills": [
+        {
+          "name": "youtube-content",
+          "paths": [
+            {
+              "from": "skills/media/youtube-content",
+              "to": "."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mattpocock-skills",
+      "description": "All skills under the listed categories, category level flattened away on vendor. Tracks the default branch, matching decision 4 (nightly sync, no review gate, no pin). The pin at 8b78b53 used by the gm-pi-environment Pi extension belongs only to that extension and is not followed here.",
+      "owner": "mattpocock",
+      "repoName": "skills",
+      "url": "https://github.com/mattpocock/skills",
+      "ref": "HEAD",
+      "licensePaths": [
+        "LICENSE"
+      ],
+      "lastSyncedAt": "2026-08-24T00:35:46.843Z",
+      "resolvedCommit": "5b15a47f2d7150f545fbcacbfe381787fc0230dc",
+      "mode": "categories",
+      "categoryRoot": "skills",
+      "includeCategories": [
+        "engineering",
+        "in-progress",
+        "misc",
+        "productivity"
+      ],
+      "excludeCategories": [
+        "deprecated"
+      ]
+    }
+  ]
+}
