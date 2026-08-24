@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { loadVendorOverlays } from "./vendor-overlays";
 
 const execFileAsync = promisify(execFile);
 
@@ -52,6 +53,7 @@ const REPO_ROOT = path.resolve(import.meta.dir, "..");
 const SOURCES_PATH = path.join(REPO_ROOT, "sources.json");
 const SKILLS_ROOT = path.join(REPO_ROOT, "skills");
 const VENDOR_ROOT = path.join(SKILLS_ROOT, "vendor");
+const VENDOR_OVERLAY_ROOT = path.join(REPO_ROOT, "vendor-overlays");
 
 // ---------- sources.json ----------
 
@@ -307,6 +309,7 @@ async function main(): Promise<void> {
 	const dryRun = new Set(process.argv.slice(2)).has("--dry-run");
 	const sourcesFile = await loadSourcesFile(SOURCES_PATH);
 	const authoredNames = await readAuthoredSkillNames(SKILLS_ROOT);
+	const vendorOverlays = await loadVendorOverlays(VENDOR_OVERLAY_ROOT);
 
 	const workRoot = await mkdtemp(path.join(tmpdir(), "sync-upstream-clone-"));
 	const stagingRoot = await mkdtemp(path.join(tmpdir(), "sync-upstream-stage-"));
@@ -333,9 +336,11 @@ async function main(): Promise<void> {
 			const source = sourcesById.get(entry.sourceId);
 			if (!source) throw new Error(`Internal error: no source config for "${entry.sourceId}".`);
 			const stagingDir = await stageEntry(entry, source, cloneDirs.get(entry.sourceId)!, stagingRoot);
+			await vendorOverlays.apply(entry.owner, entry.name, stagingDir);
 			const changes = diffTrees(await fileMap(destDir), await fileMap(stagingDir));
 			plan.push({ entry, source, destDir, stagingDir, changes });
 		}
+		vendorOverlays.assertAllApplied();
 
 		const plannedKeys = new Set(plan.map((item) => `${item.entry.owner}/${item.entry.name}`));
 		const zombies = (await listExistingVendorSkills(VENDOR_ROOT)).filter((existing) => !plannedKeys.has(`${existing.owner}/${existing.name}`));

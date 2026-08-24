@@ -36,9 +36,9 @@ first skill found, so duplicates were being silently shadowed.
 5. `gm-pi-environment` stops shipping general-purpose skills and drops `./skills` from
    `pi.skills`. Pi receives skills like every other harness, through `~/.agents/skills`.
 6. Matt subset: all skills under `engineering`, `in-progress`, `misc`, and `productivity`, excluding `deprecated`. The current count is 36 and can change on future syncs.
-7. Local modifications in vendored skills are overwritten by upstream. This applies to
-   `btca-cli`, `core-web-vitals`, `find-skills`, `pr-review-canvas`, `unslop`, `youtube-content`,
-   and `agent-browser`.
+7. Direct modifications under `skills/vendor/` are overwritten by the next sync. Persistent
+   downstream changes live under `vendor-overlays/<owner>/<skill>/` and the sync composes them
+   onto a fresh upstream staging tree before generating the vendored skill.
 8. `write-pr` and `writing-style` carry over exactly as they are on disk, including uncommitted
    edits. Those edits are wanted.
 9. `agent-browser` is vendored with a two-path merge, not kept as authored.
@@ -78,10 +78,26 @@ GregM1991/skills
 │   ├── <authored-skill>/SKILL.md              depth 1
 │   └── vendor/
 │       └── <upstream-owner>/<name>/SKILL.md   depth 3, the discovery limit
+├── vendor-overlays/
+│   └── <upstream-owner>/<name>/overlay.json   persistent downstream changes
 ├── sources.json
 ├── scripts/sync-upstream.ts
 └── .github/workflows/sync.yml
 ```
+
+## Vendor overlay mechanics
+
+The sync builds every vendored skill from a fresh upstream clone, copies its declared licence,
+then applies the matching `vendor-overlays/<owner>/<skill>/overlay.json` operations in order.
+`append-if-missing` adds a text fragment only when the target does not already contain it.
+`patch` applies a strict unified diff with `git apply`; it does not use fuzzy or three-way
+merging. An overlay with a missing file, invalid path, failed patch, or no matching upstream
+skill aborts the complete atomic sync before repository files are written.
+
+Edit the overlay inputs, never their generated result under `skills/vendor/`. Skills without an
+overlay remain byte-identical to the existing upstream-plus-licence staging behavior.
+After changing an overlay, run the complete sync and commit the overlay inputs with the generated
+vendored output. A repository revision should never contain an overlay with stale generated output.
 
 The sync must flatten upstream category directories. Matt's upstream layout is
 `skills/<category>/<name>`, which would land at `skills/vendor/mattpocock/<category>/<name>`,
@@ -230,6 +246,7 @@ npx skills add /home/greg/workspace/skills --list
 #   build-react-codebase-guidelines, fallow, find-skills, review-react-codebase-red-flags
 
 # sync script dry run must be clean immediately after a sync
+bun test scripts/vendor-overlays.test.ts
 bun scripts/sync-upstream.ts --dry-run
 ```
 
@@ -257,3 +274,4 @@ bun scripts/sync-upstream.ts --dry-run
 | 2026-08-24 | unslop-source-correction | The user corrected `unslop` provenance from `cursor/plugins:pstack/skills/unslop` to authoritative `poteto/plugins:pstack/skills/unslop`. Split `unslop` into its own repo source with `pstack/LICENSE`, removed the unused per-skill licence schema, and regenerated the vendor tree. Real sync removed the Cursor zombie and created the Poteto destination; clean dry run, byte checks, type checks, and list-only discovery of 64 unique skills passed. Nothing staged or committed. |
 | 2026-08-24 | step-9 | Proved remote `origin/main` at `75766fc` contains 64 unique canonical skills and corrected `sources.json`, saved and verified the pre-mutation backup at `/home/greg/workspace/skills-rebuild-backup/step-9/`, removed 16 proved CLI-managed unwanted globals, and installed all 64 canonical skills from `GregM1991/skills`. Disk, CLI, Pi links, tracked-file byte checks, and representative multi-file checks passed. The lock has two stale names, `todoist-api` and `web-design-guidelines`, for step 10. Nothing staged or committed. |
 | 2026-08-24 | step-10 | Saved and verified the pre-mutation backup at `/home/greg/workspace/skills-rebuild-backup/step-10/`, then used skills CLI v1.5.23 to remove the stale lock keys `todoist-api` and `web-design-guidelines` and the matching broken Claude links. The lock, 64-skill global store, CLI listing, Pi and Claude links, all bounded CLI harness paths, representative skills, backup manifest, and repository state checks passed. Nothing staged or committed. |
+| 2026-08-24 | vendor-overlays | Added versioned downstream overlays with ordered `append-if-missing` and strict patch operations, composed them in temporary staging before the existing byte diff, guarded invalid and orphaned overlays, and added the first `grilling` overlay to invoke `unslop` for user-facing questions. The real atomic sync also incorporated current upstream changes for `agent-browser` and Impeccable. Seven behavior tests, a clean post-sync dry run, diff checks, and list-only discovery of 64 unique skills passed. No global skills changed; nothing staged or committed. |

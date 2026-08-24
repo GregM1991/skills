@@ -30,6 +30,9 @@ jobs:
         with:
           bun-version: "1.3.10"
 
+      - name: Test sync tooling
+        run: bun test scripts/vendor-overlays.test.ts
+
       - name: Sync upstream skills
         shell: bash
         run: |

@@ -1,0 +1,10 @@
+{
+  "$schemaVersion": 1,
+  "operations": [
+    {
+      "type": "append-if-missing",
+      "target": "SKILL.md",
+      "content": "use-unslop.md"
+    }
+  ]
+}
