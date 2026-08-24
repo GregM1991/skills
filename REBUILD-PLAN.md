@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Status | In progress. Steps 1-8 complete. |
+| Status | Complete. All 10 steps done. |
 | Plan owner file | `/home/greg/workspace/skills/REBUILD-PLAN.md` |
 | Target repo | `GregM1991/skills`, checkout `/home/greg/workspace/skills` |
 | Second repo | `GregM1991/gm-pi-environment`, checkout `/home/greg/workspace/pi-environment` |
@@ -187,8 +187,8 @@ The extension itself routes by absolute path into
 | 6 | Add `.github/workflows/sync.yml`, nightly, auto-commit to `main`, fails loudly | done |
 | 7 | Delete `install-to-pi.ts` and `sync-from-pi.ts`; assess `audit-skills.ts` (334 lines) for reuse as a freshness check | done |
 | 8 | In `gm-pi-environment`: delete `skills/`, drop `./skills` from `pi.skills`, stop the Matt vendor being surfaced as ambient skills, update `AGENTS.md` which currently names that repo canonical for skills | done |
-| 9 | Per-machine cleanup: `npx skills remove` the unwanted globals, then `npx skills add GregM1991/skills --all -g` | todo |
-| 10 | Prune stale `~/.agents/.skill-lock.json` entries | todo |
+| 9 | Per-machine cleanup: `npx skills remove` the unwanted globals, then `npx skills add GregM1991/skills --all -g` | done |
+| 10 | Prune stale `~/.agents/.skill-lock.json` entries | done |
 
 ### Step 5 detail
 
@@ -209,9 +209,11 @@ Declare licence paths once at repo source level, and copy each declared upstream
 
 ### Step 10 detail
 
-`~/.agents/.skill-lock.json` currently tracks skills that no longer exist in `~/.agents/skills`:
-`anki-connect`, `btca-cli`, `pr-review-canvas`, `todoist-api`, `web-design-guidelines`,
-`improve-frontend-architecture`, `react-performance-guidelines`.
+Before step 9, `~/.agents/.skill-lock.json` tracked seven skills that did not exist in
+`~/.agents/skills`: `anki-connect`, `btca-cli`, `pr-review-canvas`, `todoist-api`,
+`web-design-guidelines`, `improve-frontend-architecture`, and `react-performance-guidelines`.
+Step 9 restored five as canonical skills. After step 9, only `todoist-api` and
+`web-design-guidelines` remained stale.
 
 ## Verification
 
@@ -253,3 +255,5 @@ bun scripts/sync-upstream.ts --dry-run
 | 2026-08-24 | unslop-amendment | Added `unslop` as the twelfth explicit vendored skill, generated the initial vendor tree, and accepted upstream frontmatter as canonical. The source provenance was corrected to `poteto/plugins` in the `unslop-source-correction` session below. Current upstream also added Matt's `implement-spec` and moved Impeccable's generated universal tree, so the approved dynamic baseline is 64 = 16 authored + 12 explicit vendored + 36 Matt. Real sync and clean dry run passed; list-only discovery found 64 unique skills. |
 | 2026-08-24 | step-8 | Removed the full environment `skills/` tree and root `./skills` resource, limited Matt ambient discovery to the `matt-workflow` router, kept all 35 pinned extension vendor skills private and available for absolute routing, moved five non-Matt default routes to `~/.agents/skills`, updated source-of-truth documentation and bootstrap guidance, and removed the obsolete global-store-emptying helper. Extension checks, 136 tests, shell syntax, JSON parsing, diff checks, and focused discovery and route validation passed; nothing staged or committed. |
 | 2026-08-24 | unslop-source-correction | The user corrected `unslop` provenance from `cursor/plugins:pstack/skills/unslop` to authoritative `poteto/plugins:pstack/skills/unslop`. Split `unslop` into its own repo source with `pstack/LICENSE`, removed the unused per-skill licence schema, and regenerated the vendor tree. Real sync removed the Cursor zombie and created the Poteto destination; clean dry run, byte checks, type checks, and list-only discovery of 64 unique skills passed. Nothing staged or committed. |
+| 2026-08-24 | step-9 | Proved remote `origin/main` at `75766fc` contains 64 unique canonical skills and corrected `sources.json`, saved and verified the pre-mutation backup at `/home/greg/workspace/skills-rebuild-backup/step-9/`, removed 16 proved CLI-managed unwanted globals, and installed all 64 canonical skills from `GregM1991/skills`. Disk, CLI, Pi links, tracked-file byte checks, and representative multi-file checks passed. The lock has two stale names, `todoist-api` and `web-design-guidelines`, for step 10. Nothing staged or committed. |
+| 2026-08-24 | step-10 | Saved and verified the pre-mutation backup at `/home/greg/workspace/skills-rebuild-backup/step-10/`, then used skills CLI v1.5.23 to remove the stale lock keys `todoist-api` and `web-design-guidelines` and the matching broken Claude links. The lock, 64-skill global store, CLI listing, Pi and Claude links, all bounded CLI harness paths, representative skills, backup manifest, and repository state checks passed. Nothing staged or committed. |
