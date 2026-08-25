@@ -13,8 +13,8 @@
       "licensePaths": [
         "LICENSE"
       ],
-      "lastSyncedAt": "2026-08-24T03:54:45.870Z",
-      "resolvedCommit": "95d6e255afe1596b557d7a8498517884438f5b3a",
+      "lastSyncedAt": "2026-08-25T03:49:19.562Z",
+      "resolvedCommit": "afa8da942115f2961fdbfa80807ea0b232ff6c00",
       "mode": "explicit",
       "skills": [
         {
@@ -47,8 +47,8 @@
       "licensePaths": [
         "LICENSE"
       ],
-      "lastSyncedAt": "2026-08-24T03:54:45.870Z",
-      "resolvedCommit": "021d9255e543d2f1ab66b87f338d85c3d7a910be",
+      "lastSyncedAt": "2026-08-25T03:49:19.562Z",
+      "resolvedCommit": "585e740fcef069d74e21f0e88e8bf4ea7df34385",
       "mode": "explicit",
       "skills": [
         {
@@ -80,7 +80,7 @@
       "licensePaths": [
         "LICENSE.txt"
       ],
-      "lastSyncedAt": "2026-08-24T03:54:45.870Z",
+      "lastSyncedAt": "2026-08-25T03:49:19.562Z",
       "resolvedCommit": "9b0e00ad1b941165e2506545bbfddafa34cf2cb8",
       "mode": "explicit",
       "skills": [
@@ -105,7 +105,7 @@
       "licensePaths": [
         "LICENSE.md"
       ],
-      "lastSyncedAt": "2026-08-24T03:54:45.870Z",
+      "lastSyncedAt": "2026-08-25T03:49:19.562Z",
       "resolvedCommit": "864e5ba452566c318d60f75229882233b2a5c120",
       "mode": "explicit",
       "skills": [
@@ -130,8 +130,8 @@
       "licensePaths": [
         "LICENSE"
       ],
-      "lastSyncedAt": "2026-08-24T03:54:45.870Z",
-      "resolvedCommit": "ae11d303a51262a6017f9ee4626a4777565eb374",
+      "lastSyncedAt": "2026-08-25T03:49:19.562Z",
+      "resolvedCommit": "18ebe086438a901e54c2c5ee84d9273045e1c3ca",
       "mode": "explicit",
       "skills": [
         {
@@ -155,7 +155,7 @@
       "licensePaths": [
         "LICENSE"
       ],
-      "lastSyncedAt": "2026-08-24T03:54:45.870Z",
+      "lastSyncedAt": "2026-08-25T03:49:19.562Z",
       "resolvedCommit": "435076e78988e1e6ec40d00b0b1d76bdbbc5419a",
       "mode": "explicit",
       "skills": [
@@ -180,8 +180,8 @@
       "licensePaths": [
         "LICENSE"
       ],
-      "lastSyncedAt": "2026-08-24T03:54:45.870Z",
-      "resolvedCommit": "c3a30086bc395ea2197fbe287dc59c18969aaeb6",
+      "lastSyncedAt": "2026-08-25T03:49:19.562Z",
+      "resolvedCommit": "78b50aa4160616fa12c465a571ac39a0819c434d",
       "mode": "explicit",
       "skills": [
         {
@@ -205,7 +205,7 @@
       "licensePaths": [
         "cursor-team-kit/LICENSE"
       ],
-      "lastSyncedAt": "2026-08-24T03:54:45.870Z",
+      "lastSyncedAt": "2026-08-25T03:49:19.562Z",
       "resolvedCommit": "46125561306434d8a1d7745d540d8932ab0cd2a2",
       "mode": "explicit",
       "skills": [
@@ -230,7 +230,7 @@
       "licensePaths": [
         "pstack/LICENSE"
       ],
-      "lastSyncedAt": "2026-08-24T03:54:45.870Z",
+      "lastSyncedAt": "2026-08-25T03:49:19.562Z",
       "resolvedCommit": "74dd2291e8e37b12fd6dc49b2acbd655c6bdaf12",
       "mode": "explicit",
       "skills": [
@@ -255,7 +255,7 @@
       "licensePaths": [
         "LICENSE"
       ],
-      "lastSyncedAt": "2026-08-24T03:54:45.870Z",
+      "lastSyncedAt": "2026-08-25T03:49:19.562Z",
       "resolvedCommit": "6abccd60c704f669423d6a06ff0809fa39513ce8",
       "mode": "explicit",
       "skills": [
@@ -280,8 +280,8 @@
       "licensePaths": [
         "LICENSE"
       ],
-      "lastSyncedAt": "2026-08-24T03:54:45.870Z",
-      "resolvedCommit": "6ed8bcee8dc7c27965a2ee1fb8e8370b0bfd6169",
+      "lastSyncedAt": "2026-08-25T03:49:19.562Z",
+      "resolvedCommit": "64a6f42cb38def7ad6524bdfe640a16997c88760",
       "mode": "explicit",
       "skills": [
         {
@@ -305,8 +305,8 @@
       "licensePaths": [
         "LICENSE"
       ],
-      "lastSyncedAt": "2026-08-24T03:54:45.870Z",
-      "resolvedCommit": "5b15a47f2d7150f545fbcacbfe381787fc0230dc",
+      "lastSyncedAt": "2026-08-25T03:49:19.562Z",
+      "resolvedCommit": "6654f6b60cd9d5be8b54c6fafe44346dabeb3b76",
       "mode": "categories",
       "categoryRoot": "skills",
       "includeCategories": [
