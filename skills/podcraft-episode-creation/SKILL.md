@@ -1,62 +1,81 @@
 ---
 name: podcraft-episode-creation
-description: Create and verify a Podcraft episode.
+description: Create and verify a Podcraft episode through the running service.
 disable-model-invocation: true
 ---
 
-# Podcraft Episode Creation
+# Podcraft episode creation
 
-Produce one **ready, playable, feed-visible** episode.
+Produce one ready, playable, feed-visible episode through the Podcraft API. The
+caller needs Python 3 and network access to the service. A Podcraft checkout is
+not part of this workflow.
 
-## 1. Locate
+## 1. Connect
 
-Find a local Podcraft checkout. Accept a directory only when:
+Set `SKILL_DIR` to this skill's absolute directory. The bundled client uses
+`PODCRAFT_API_BASE_URL`, falling back to the current server's Tailscale DNS name.
+Read [references/api.md](references/api.md), then run its readiness and series
+commands.
 
-- `package.json` has `name: "podcraft"`;
-- its scripts include `episode:create` and `episode:create-byos`;
-- both referenced script files exist.
+Podcraft currently has no application-layer API authentication. Network policy
+is its only access control. Use a Tailscale address and treat anyone who can
+reach TCP port 5200 as having production access. If the caller cannot reach the
+configured URL, report the failed check and stop.
 
-Prefer the current repository, then search the user's workspace. Set its absolute path as `PODCRAFT_ROOT`. If no checkout satisfies every check, stop and ask for its location.
-
-**Complete when:** one validated `PODCRAFT_ROOT` exists.
+**Complete when:** readiness passes and the requested series slug appears in the
+API result.
 
 ## 2. Frame
 
 Choose one content-authority branch:
 
-- **Generated** — Podcraft may research and write from a topic plus summary. Load [references/generated.md](references/generated.md).
-- **BYOS** — the supplied script is authoritative and Podcraft only renders and delivers it. Load [references/byos.md](references/byos.md).
+- **Generated:** Podcraft researches and writes from a topic and supplied
+  summary. Read [references/generated.md](references/generated.md).
+- **BYOS:** the supplied script is authoritative; Podcraft renders and delivers
+  it. Read [references/byos.md](references/byos.md).
 
-Resolve the branch's required inputs. The series must already exist. Use the branch defaults for unspecified optional inputs.
+Resolve every required input and use branch defaults for optional inputs the
+user did not specify.
 
-**Complete when:** one branch is selected and all of its required inputs are concrete.
+**Complete when:** one branch is selected and its create command has concrete
+arguments.
 
-## 3. Preflight
+## 3. Authorize
 
-From `PODCRAFT_ROOT`, check the local app:
+Run the branch command with `--dry-run`. This validates local limits, resolves
+the series slug and voice, and prints content hashes without creating an
+episode.
 
-```bash
-curl -fsS "${PODCRAFT_HEALTH_URL:-http://127.0.0.1:5200/api/health}"
-```
+Episode creation is a production side effect. If the user's request has not
+already authorized the exact plan, present its mode, series, title or topic,
+source path and hash, voice, and optional overrides for confirmation.
 
-Confirm the chosen source file is nonempty and satisfies the loaded branch contract. If health fails, report the failed check and stop before episode creation.
+**Complete when:** the dry run passes and the exact submission is authorized.
 
-Episode creation is a production side effect. When the user's request has not already authorized these exact inputs, present mode, series, title or topic, source path, and voice for confirmation.
+## 4. Create once
 
-**Complete when:** health passes, the source satisfies its contract, and the exact submission is authorized.
+Run the authorized command once with `--dry-run` removed. Save its full stdout,
+stderr, exit status, and returned episode ID. The API starts generation in the
+background.
 
-## 4. Create
+The client never retries creation. If the response is lost or the result is
+ambiguous, preserve the evidence and reconcile against recent episodes before
+considering another create request.
 
-Run the command from the loaded branch reference exactly once. Capture stdout, stderr, exit status, and any episode ID. A nonzero exit is a failed creation result, not permission to create another episode.
+**Complete when:** one request returns an episode ID, or one failed attempt has
+preserved evidence.
 
-**Complete when:** the command reaches `ready` or returns preserved failure evidence.
+## 5. Wait and verify
 
-## 5. Verify
+When creation returns an ID, read
+[references/verification.md](references/verification.md). Wait for a terminal
+status, then apply every production and delivery gate. Keep listening quality
+separate from mechanical delivery.
 
-When creation returns an episode ID or delivery URLs, load [references/verification.md](references/verification.md) and apply every relevant production and delivery check. Keep human listening quality separate from mechanical delivery.
-
-**Complete when:** production and delivery gates have explicit pass/fail evidence and remaining human checks are named.
+**Complete when:** every mechanical gate has explicit pass/fail evidence and
+remaining human checks are named.
 
 ## Final report
 
-Return mode, series, title or topic, episode ID, duration, URLs, gate results, failure evidence, and human review still required.
+Return mode, series, title or topic, episode ID, duration, URLs, gate results,
+failure evidence, and human review still required.

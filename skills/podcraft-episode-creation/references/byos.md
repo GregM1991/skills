@@ -1,56 +1,41 @@
 # BYOS episode contract
 
-Use this branch when the supplied script is authoritative. Podcraft performs TTS, MP3 production, storage, and delivery without creating or revising the content. This document is the operational cache; consult the source anchors only when the package scripts are missing, observed output violates this contract, or Podcraft has changed.
+Use this branch when the supplied script is authoritative. Podcraft performs
+text-to-speech, MP3 production, storage, and delivery without rewriting it.
 
 ## Inputs
 
 Required:
 
 - existing series slug;
-- title: 1–200 characters after trimming;
-- script file: 1–200,000 characters after trimming.
+- title: 1 to 200 characters after trimming;
+- script file: 1 to 200,000 characters after trimming.
 
-Defaults:
+The selected series' configured voice is the default. Pass `--voice` only for
+an explicit override.
 
-- voice: `af_sky`;
-- environment: `.env.production`, then `.env`.
+## Preflight and create
 
-Use `--allow-duplicate` only when the user explicitly authorizes another copy. Duplicate identity is series + title + exact trimmed script + voice.
-
-## Create
-
-Use JSON mode as the stable result contract:
+Prefer an absolute script path so the authorized source remains unambiguous.
+Run the same command first with `--dry-run`, then once without it after
+authorization:
 
 ```bash
-cd "$PODCRAFT_ROOT"
-bun run episode:create-byos -- \
+python3 "$SKILL_DIR/scripts/podcraft_api.py" create byos \
   --series <series-slug> \
   --title "<title>" \
-  --script-file <script-file> \
-  --voice <voice-id> \
-  --json
+  --script-file <absolute-script-path> \
+  --dry-run
 ```
 
-The command runs synchronously. Stdout must contain exactly one JSON object; operational logs belong on stderr.
+The dry run reports the resolved series, voice, character count, and SHA-256
+hash. It does not submit the script.
 
-## Result
+Before submission, the client checks existing episodes in the series for the
+same trimmed title, script, and voice. `--allow-duplicate` bypasses this check
+and requires explicit user authorization. This client-side check reduces
+accidents but is not a cross-host lock.
 
-Success requires exit code `0` and JSON containing:
-
-- `status: "ready"`;
-- non-null `episodeId`;
-- `error: null`;
-- episode, audio, and RSS URLs.
-
-Preserve the entire JSON object on failure. A failure after database creation may still carry episode ID, status, error, and artifact URLs. A missing series or invalid input has nullable artifact fields and creates no episode.
-
-## Source anchors
-
-Relative to `PODCRAFT_ROOT`:
-
-- `package.json:18-19` — canonical episode scripts.
-- `README.md:86-99` — BYOS purpose, usage, limits, JSON, and duplicate contract.
-- `scripts/create-byos-episode.ts:151-188` — input validation and duplicate identity.
-- `scripts/create-byos-episode.ts:189-220` — synchronous ready gate, result schema, and flags.
-- `scripts/create-byos-episode.ts:231-260` — environment selection and JSON stdout isolation.
-- `scripts/create-byos-episode.ts:263-272` — stable JSON failure output.
+Creation success requires exit code `0` and an episode object with a nonempty
+`id`. It is an accepted background job, not a ready episode. Continue with the
+wait and verification commands in [verification.md](verification.md).
