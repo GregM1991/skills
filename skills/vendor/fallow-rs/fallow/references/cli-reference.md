@@ -385,7 +385,7 @@ Human output groups paths under "Shared with your team (commit these)" and "Loca
 {
   "kind": "agent-install",
   "schema_version": 1,
-  "fallow_version": "3.22.0",
+  "fallow_version": "3.23.0",
   "root": "/abs/path",
   "mode": "install",
   "dry_run": false,
@@ -589,7 +589,7 @@ fallow health --format json --quiet --trend
 {
   "kind": "health",
   "schema_version": 7,
-  "version": "3.22.0",
+  "version": "3.23.0",
   "elapsed_ms": 32,
   "summary": {
     "files_analyzed": 482,
@@ -987,7 +987,7 @@ fallow audit \
 {
   "kind": "audit",
   "schema_version": 7,
-  "version": "3.22.0",
+  "version": "3.23.0",
   "command": "audit",
   "verdict": "fail",
   "changed_files_count": 12,
@@ -1064,7 +1064,7 @@ fallow flags --format json --quiet --workspace my-package
 ```json
 {
   "schema_version": 7,
-  "version": "3.22.0",
+  "version": "3.23.0",
   "elapsed_ms": 116,
   "feature_flags": [],
   "total_flags": 0
@@ -1165,7 +1165,7 @@ fallow security --gate newly-reachable --changed-since origin/main
 {
   "kind": "security",
   "schema_version": "4",
-  "version": "3.22.0",
+  "version": "3.23.0",
   "elapsed_ms": 42,
   "config": {
     "rules": {
@@ -1194,7 +1194,7 @@ fallow security --gate newly-reachable --changed-since origin/main
 {
   "kind": "security",
   "schema_version": "4",
-  "version": "3.22.0",
+  "version": "3.23.0",
   "elapsed_ms": 42,
   "config": {
     "rules": {
@@ -1903,7 +1903,7 @@ Set `FALLOW_FORMAT=json` and `FALLOW_QUIET=1` in your agent environment to avoid
 
 `fallow ci reconcile-review` reads a typed review envelope (`--format review-github` / `review-gitlab`), looks up existing fingerprints on the PR/MR, and resolves stale review threads when their finding is no longer present in the new envelope. Posts an idempotent "Resolved in `<sha>`" follow-up comment per stale finding (skipped if a marker for the same fingerprint at the current SHA already exists).
 
-Provider mutations are fail-fast. If a preflight check, permission error, or provider mutation fails, JSON output keeps `apply_errors` and can add `apply_hint`, `failed_fingerprints`, and `unapplied_fingerprints` so agents and CI wrappers can report what was not fully applied.
+Provider mutations are isolated per fingerprint. A failed mutation blocks only the remaining operations of that same fingerprint, which is retried whole on the next run, while every other stale fingerprint is still applied. (A preflight failure is different: preflight runs before any mutation, and a failure there abandons the whole plan because the state snapshot is untrustworthy.) If a preflight check, permission error, or provider mutation fails, JSON output keeps `apply_errors` and can add `apply_hint`, `failed_fingerprints`, and `unapplied_fingerprints` so agents and CI wrappers can report what was not fully applied. `fallow ci post-review` reports those same three fields for the reconcile pass it runs after posting new inline comments.
 
 ### Flags
 
@@ -1959,7 +1959,7 @@ The HTTP layer mirrors the bash `gh_api_retry` / `curl_retry` helpers: `FALLOW_A
 {
   "kind": "dead-code",
   "schema_version": 7,
-  "version": "3.22.0",
+  "version": "3.23.0",
   "elapsed_ms": 45,
   "total_issues": 12,
   "entry_points": {
@@ -2119,7 +2119,7 @@ When `--baseline` is used in combined output, the JSON includes a `baseline_delt
 {
   "kind": "dupes",
   "schema_version": 7,
-  "version": "3.22.0",
+  "version": "3.23.0",
   "elapsed_ms": 82,
   "total_clones": 15,
   "total_lines_duplicated": 230,
@@ -2163,11 +2163,11 @@ When running `fallow` with no subcommand (all analyses), the JSON output combine
 {
   "kind": "combined",
   "schema_version": 7,
-  "version": "3.22.0",
+  "version": "3.23.0",
   "elapsed_ms": 159,
   "check": {
     "schema_version": 7,
-    "version": "3.22.0",
+    "version": "3.23.0",
     "elapsed_ms": 45,
     "total_issues": 12,
     "unused_files": [],
