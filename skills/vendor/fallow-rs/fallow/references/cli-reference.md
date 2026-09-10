@@ -446,7 +446,7 @@ Human output groups paths under "Shared with your team (commit these)" and "Loca
 {
   "kind": "agent-install",
   "schema_version": 1,
-  "fallow_version": "3.23.0",
+  "fallow_version": "3.24.1",
   "root": "/abs/path",
   "mode": "install",
   "dry_run": false,
@@ -650,7 +650,7 @@ fallow health --format json --quiet --trend
 {
   "kind": "health",
   "schema_version": 7,
-  "version": "3.23.0",
+  "version": "3.24.1",
   "elapsed_ms": 32,
   "summary": {
     "files_analyzed": 482,
@@ -1053,7 +1053,7 @@ fallow audit \
 {
   "kind": "audit",
   "schema_version": 7,
-  "version": "3.23.0",
+  "version": "3.24.1",
   "command": "audit",
   "verdict": "fail",
   "changed_files_count": 12,
@@ -1130,7 +1130,7 @@ fallow flags --format json --quiet --workspace my-package
 ```json
 {
   "schema_version": 7,
-  "version": "3.23.0",
+  "version": "3.24.1",
   "elapsed_ms": 116,
   "feature_flags": [],
   "total_flags": 0
@@ -1231,7 +1231,7 @@ fallow security --gate newly-reachable --changed-since origin/main
 {
   "kind": "security",
   "schema_version": "4",
-  "version": "3.23.0",
+  "version": "3.24.1",
   "elapsed_ms": 42,
   "config": {
     "rules": {
@@ -1260,7 +1260,7 @@ fallow security --gate newly-reachable --changed-since origin/main
 {
   "kind": "security",
   "schema_version": "4",
-  "version": "3.23.0",
+  "version": "3.24.1",
   "elapsed_ms": 42,
   "config": {
     "rules": {
@@ -1709,6 +1709,8 @@ Cloud analysis emits the same `runtime_coverage` JSON block as local mode. Its s
 
 Each finding's `actions[].type` uses the canonical kebab-case vocabulary: `delete-cold-code` is emitted on `verdict=safe_to_delete`, `review-runtime` on `verdict=review_required`. The sidecar may emit additional protocol-specific identifiers, so consumers should treat unknown values as forward-compat extensions rather than schema violations.
 
+Under `--production` the evidence block also carries `test_only_reference`. It is `true` when the function is unreachable in the production module graph but still referenced from a file production mode excludes (test, spec, story, fixture, benchmark). Such a function is never `safe_to_delete`: it is reported as `review_required` with the action "Only tests reference this export; delete the test usage together with the function or keep it". The field is absent when no production filter was applied, because there is no second reachability answer to report.
+
 ### `upload-inventory` flags
 
 | Flag | Type | Default | Description |
@@ -2026,7 +2028,7 @@ The HTTP layer mirrors the bash `gh_api_retry` / `curl_retry` helpers: `FALLOW_A
 {
   "kind": "dead-code",
   "schema_version": 7,
-  "version": "3.23.0",
+  "version": "3.24.1",
   "elapsed_ms": 45,
   "total_issues": 12,
   "entry_points": {
@@ -2186,7 +2188,7 @@ When `--baseline` is used in combined output, the JSON includes a `baseline_delt
 {
   "kind": "dupes",
   "schema_version": 7,
-  "version": "3.23.0",
+  "version": "3.24.1",
   "elapsed_ms": 82,
   "total_clones": 15,
   "total_lines_duplicated": 230,
@@ -2230,11 +2232,11 @@ When running `fallow` with no subcommand (all analyses), the JSON output combine
 {
   "kind": "combined",
   "schema_version": 7,
-  "version": "3.23.0",
+  "version": "3.24.1",
   "elapsed_ms": 159,
   "check": {
     "schema_version": 7,
-    "version": "3.23.0",
+    "version": "3.24.1",
     "elapsed_ms": 45,
     "total_issues": 12,
     "unused_files": [],
