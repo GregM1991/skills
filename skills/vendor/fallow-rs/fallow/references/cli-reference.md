@@ -446,7 +446,7 @@ Human output groups paths under "Shared with your team (commit these)" and "Loca
 {
   "kind": "agent-install",
   "schema_version": 1,
-  "fallow_version": "3.25.0",
+  "fallow_version": "3.26.0",
   "root": "/abs/path",
   "mode": "install",
   "dry_run": false,
@@ -650,7 +650,7 @@ fallow health --format json --quiet --trend
 {
   "kind": "health",
   "schema_version": 7,
-  "version": "3.25.0",
+  "version": "3.26.0",
   "elapsed_ms": 32,
   "summary": {
     "files_analyzed": 482,
@@ -1053,7 +1053,7 @@ fallow audit \
 {
   "kind": "audit",
   "schema_version": 7,
-  "version": "3.25.0",
+  "version": "3.26.0",
   "command": "audit",
   "verdict": "fail",
   "changed_files_count": 12,
@@ -1130,7 +1130,7 @@ fallow flags --format json --quiet --workspace my-package
 ```json
 {
   "schema_version": 7,
-  "version": "3.25.0",
+  "version": "3.26.0",
   "elapsed_ms": 116,
   "feature_flags": [],
   "total_flags": 0
@@ -1231,7 +1231,7 @@ fallow security --gate newly-reachable --changed-since origin/main
 {
   "kind": "security",
   "schema_version": "4",
-  "version": "3.25.0",
+  "version": "3.26.0",
   "elapsed_ms": 42,
   "config": {
     "rules": {
@@ -1260,7 +1260,7 @@ fallow security --gate newly-reachable --changed-since origin/main
 {
   "kind": "security",
   "schema_version": "4",
-  "version": "3.25.0",
+  "version": "3.26.0",
   "elapsed_ms": 42,
   "config": {
     "rules": {
@@ -1836,7 +1836,7 @@ Available on all commands:
 | `--group-by` | `owner\|directory\|package\|section` | - | Group output by CODEOWNERS ownership (`owner`), first path component (`directory`), workspace package (`package`, aliases: `workspace`, `pkg`), or GitLab CODEOWNERS `[Section]` headers (`section`, alias: `gl-section`). All output formats partition issues into labeled groups. `section` mode attaches an `owners` array to each group in JSON output |
 | `--performance` | `bool` | `false` | Show pipeline timing breakdown |
 | `--explain` | `bool` | `false` | JSON: include metric definitions in `_meta`. Human: print a `Description:` line under each section header. Always on for MCP. |
-| `--explain-skipped` | `bool` | `false` | Show a per-pattern breakdown for default duplicate ignores |
+| `--explain-skipped` | `bool` | `false` | Human/markdown only: show per-pattern counts for files skipped by the default duplicates ignores. `dupes` prints only that breakdown; on `check`, `dead-code`, `audit` and the default run the same flag reports source files the built-in discovery ignores removed |
 | `--summary` | `bool` | `false` | Show only category counts without individual items. Useful for dashboards and quick overviews |
 | `--ci` | `bool` | `false` | CI mode: `--format sarif --fail-on-issues --quiet` |
 | `--fail-on-issues` | `bool` | `false` | Exit 1 if any issues found (promotes `warn` to `error`) |
@@ -1844,6 +1844,7 @@ Available on all commands:
 | `-o, --output-file` | `string` | - | Write the report to a file instead of stdout, for any --format (no ANSI codes). Useful on large projects where the terminal scrollback truncates the top. Progress and the confirmation stay on stderr |
 | `--report-path-prefix` | `string` | - | Prefix prepended to every path in the CI-facing formats (`github-annotations`, `github-summary`, `codeclimate`, `review-github`, `review-gitlab`). CI platforms address files by repository-root-relative path, so when the analyzed project lives in a subdirectory (e.g. `packages/app/`), paths need that offset. fallow detects the offset via the git toplevel automatically; this flag overrides the detection. Pass an empty string to disable rebasing and emit paths relative to `--root` |
 | `--fail-on-regression` | `bool` | `false` | Fail if issue count increased beyond tolerance vs a regression baseline |
+| `--fail-on-stale-baseline` | `bool` | `false` | Exit with code 1 if a loaded --baseline has entries that match nothing in this run |
 | `--tolerance` | `string` | `0` | Allowed increase: `"2%"` (percentage) or `"5"` (absolute). Default: `"0"` |
 | `--regression-baseline` | `string` | - | Path to a standalone regression baseline file. Without it, fallow uses `regression.baseline` from the config |
 | `--save-regression-baseline` | `string` | - | Save current issue counts. With no path, update `regression.baseline` in the discovered fallow config or create `.fallowrc.json`; with a path, write a standalone baseline file |
@@ -2029,7 +2030,7 @@ The HTTP layer mirrors the bash `gh_api_retry` / `curl_retry` helpers: `FALLOW_A
 {
   "kind": "dead-code",
   "schema_version": 7,
-  "version": "3.25.0",
+  "version": "3.26.0",
   "elapsed_ms": 45,
   "total_issues": 12,
   "entry_points": {
@@ -2189,7 +2190,7 @@ When `--baseline` is used in combined output, the JSON includes a `baseline_delt
 {
   "kind": "dupes",
   "schema_version": 7,
-  "version": "3.25.0",
+  "version": "3.26.0",
   "elapsed_ms": 82,
   "total_clones": 15,
   "total_lines_duplicated": 230,
@@ -2233,11 +2234,11 @@ When running `fallow` with no subcommand (all analyses), the JSON output combine
 {
   "kind": "combined",
   "schema_version": 7,
-  "version": "3.25.0",
+  "version": "3.26.0",
   "elapsed_ms": 159,
   "check": {
     "schema_version": 7,
-    "version": "3.25.0",
+    "version": "3.26.0",
     "elapsed_ms": 45,
     "total_issues": 12,
     "unused_files": [],
