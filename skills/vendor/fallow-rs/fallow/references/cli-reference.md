@@ -52,7 +52,7 @@ Every fallow command with its purpose and key flags. The table is regenerated fr
 | `doctor` | Diagnose project readiness without analysis or mutation |  |
 | `similar-code` | Find semantically similar functions with a pinned local model (opt-in) | `--threshold`, `--min-lines`, `--top`, `--file` |
 | `inspect` | Compose one evidence bundle for a file or exported symbol | `--file <path>`, `--symbol <file>:<export>` |
-| `trace` | Trace a symbol's call chain (best-effort, syntactic; OFF the ranked path) | `symbol`, `--callers`, `--callees`, `--depth` |
+| `trace` | Trace a symbol's call chain (best-effort, syntactic; OFF the ranked path) | `symbol`, `--callers`, `--callees`, `--depth`, `--path`, `--eager-only` |
 | `trace-error` | Resolve a runtime stack trace's frames to the definitions they name (best-effort, syntactic; OFF the ranked path) | `trace_file` |
 | `fix` | Auto-remove unused exports/deps | `--dry-run`, `--yes` (required in non-TTY) |
 | `init` | Generate config file, AGENTS.md agent guide, or pre-commit hook | `--toml`, `--agents`, `--hooks`, `--branch` |
@@ -68,11 +68,11 @@ Every fallow command with its purpose and key flags. The table is regenerated fr
 | `guard` | Show which architecture rules apply to files before changing them | `files` |
 | `config` | Show the loaded config path and resolved config (verifies which `.fallowrc.json` is in effect) | `--path` |
 | `recommend` | Recommend a project-tailored config for an agent to author |  |
-| `list` | Inspect project structure | `--files`, `--entry-points`, `--plugins`, `--boundaries`, `--workspaces` |
+| `list` | Inspect project structure | `--files`, `--entry-points`, `--plugins`, `--boundaries`, `--workspaces`, `--entry-weight` |
 | `workspaces` | Inspect monorepo workspaces + discovery diagnostics (shorthand for `list --workspaces`) | (no flags) |
 | `dupes` | Code duplication detection | `--mode`, `--near`, `--threshold`, `--top`, `--changed-since`, `--workspace`, `--changed-workspaces`, `--skip-local`, `--cross-language`, `--ignore-imports`, `--explain-skipped`, `--fail-on-regression`, `--tolerance`, `--regression-baseline`, `--save-regression-baseline` |
 | `health` | Function complexity analysis (also covers component templates as synthetic `<template>` findings: Angular external `.html` files via `templateUrl` AND inline `@Component({ template: \`...\` })` literals, plus Vue, Svelte and Astro single-file components; suppress an Angular external template with `<!-- fallow-ignore-file complexity -->` at the top of the `.html` file, an Angular inline template with `// fallow-ignore-next-line complexity` directly above the `@Component` decorator, and a `.svelte` / `.vue` / `.astro` template with `<!-- fallow-ignore-next-line complexity -->` on the line immediately above the reported line) | `--complexity`, `--max-cyclomatic`, `--max-cognitive`, `--max-crap`, `--top`, `--sort`, `--file-scores`, `--hotspots`, `--ownership`, `--ownership-emails`, `--targets`, `--effort`, `--score`, `--min-score`, `--since`, `--min-commits`, `--save-snapshot`, `--trend`, `--coverage-gaps`, `--coverage`, `--coverage-root`, `--runtime-coverage`, `--min-invocations-hot`, `--min-observation-volume`, `--low-traffic-threshold`, `--css`, `--complexity-breakdown`, `--min-severity`, `--report-only`, `--workspace`, `--changed-workspaces`, `--baseline`, `--save-baseline` |
-| `flags` | Detect feature flag patterns (env vars, SDK calls, config objects) | `--top` |
+| `flags` | Detect feature flag patterns (env vars, SDK calls, config objects) | `--top`, `--retirement`, `--reason`, `--min-age`, `--flag-state`, `--max-flag-age` |
 | `suppressions` | List active fallow-ignore suppression markers (read-only inventory) | `--file` |
 | `explain` | Explain one issue type without running analysis | `<issue-type>`, `--format json` |
 | `audit` | Combined dead-code + complexity + duplication + styling for changed files, returns a verdict; `fallow review` is an alias for `fallow audit --brief` (advisory orientation brief, always exits 0) | `--base`, `--gate`, `--brief`, `--max-decisions`, `--walkthrough-guide`, `--walkthrough-file`, `--show-deprioritized`, `--production`, `--production-dead-code`, `--production-health`, `--production-dupes`, `--workspace`, `--changed-workspaces`, `--ci`, `--fail-on-issues`, `--explain`, `--explain-skipped`, `--dead-code-baseline`, `--health-baseline`, `--dupes-baseline`, `--max-crap`, `--coverage`, `--coverage-root`, `--no-css`, `--css-deep`, `--no-css-deep`, `--include-entry-exports` |
@@ -347,6 +347,7 @@ Inspect discovered files, entry points, detected frameworks, and architecture bo
 | `--plugins` | `bool` | `false` | List active framework plugins |
 | `--boundaries` | `bool` | `false` | Show architecture boundary zones, rules, per-zone file counts, and `logical_groups[]` for `autoDiscover` parents |
 | `--workspaces` | `bool` | `false` | Show discovered monorepo workspaces plus any workspace-discovery diagnostics (malformed `package.json`, unreachable glob matches, missing tsconfig references). Available as the `fallow workspaces` alias too. |
+| `--entry-weight` | `bool` | `false` | Show the startup import weight of each runtime entry point, in source bytes (not bundle size): eager, deferred and out-of-thread modules, eager packages, and the imports that keep the most bytes eager |
 
 Common global flags for this command: [`--format`](#global-flags), [`--quiet`](#global-flags).
 <!-- generated:flags:list:end -->
@@ -358,8 +359,13 @@ fallow list --entry-points --format json --quiet
 fallow list --plugins --format json --quiet
 fallow list --boundaries --format json --quiet
 fallow list --workspaces --format json --quiet
+fallow list --entry-weight --format json --quiet
 fallow workspaces --format json --quiet  # alias of `fallow list --workspaces`
 ```
+
+The `--entry-weight` JSON output carries `entry_weight.entries[]`, one row per runtime entry point, heaviest first. Each row has `eager_modules` and `eager_bytes` (the project modules and source bytes that load before the entry runs; `import type` and a declaration file do not count), `eager_css_bytes`, `deferred_modules` and `deferred_bytes` (reached only through `import()` or a lazy glob), `out_of_thread_modules` and `out_of_thread_bytes` (reached only through a `new URL(..., import.meta.url)` reference such as a worker URL, `child_process.fork`, a pino transport or a `module.register` hook), `eager_packages[]` with the specifiers as written, and `dominating_imports[]`. A dominating import is one import that alone keeps `exclusive_bytes` on the startup path. The unit is `source_bytes`: types and comments count, and tree shaking does not apply, so the value is not a bundle size. An import without the `type` keyword counts as eager, even when it brings in only types that TypeScript removes, so `eager_bytes` can be too high. Treat a dominating import as evidence for a review, not as a fix: a lazy load of code that the first screen needs can make startup slower.
+
+To gate eager growth in CI, save a baseline file on the main branch with `fallow list --entry-weight --save-regression-baseline <PATH>`. A later run with `--regression-baseline <PATH>` adds `entry_weight.regression`: per-entry `baseline_eager_bytes`, `current_eager_bytes`, `new_eager_packages` and `exceeded`. The comparison is report-only until you add `--fail-on-regression`; then an entry that grew more than `--tolerance` (bytes, or a percentage such as `5%`) exits 1. A new entry never fails the gate.
 
 The `--workspaces` JSON output carries `workspaces[]` (name, project-root-relative path, `is_internal_dependency` bool) plus `workspace_diagnostics[]`. Each diagnostic has a `kind` discriminator (`undeclared-workspace`, `malformed-package-json`, `glob-matched-no-package-json`, `malformed-tsconfig`, `tsconfig-reference-dir-missing`, `malformed-pnpm-workspace-yaml`, `skipped-large-file`, `skipped-minified-file`, `skipped-source-dotdir`, `source-read-failure`, `bun-lockb-override-resolution-skipped`) with a typed payload (`error`, `pattern`, or none), and a `path` that is project-root-relative with forward slashes on every envelope that carries the array. The same `workspace_diagnostics[]` array is also surfaced on the `fallow dead-code --format json`, `fallow dupes --format json`, and `fallow health --format json` envelopes, at the top level of the bare combined `fallow --format json` envelope, on `fallow audit --format json` under `dead_code`, and on the `audit-brief` envelope shared by `fallow review --format json` and `fallow audit --brief --format json`, also under `dead_code` (omitted when empty). The combined carrier is the envelope root, not a section, so `--skip check`, `--only health`, and `--only dupes` all still report what their analyses recorded. The combined root is the union of what every analysis in the run recorded, deduplicated on the whole `kind` (typed payload included) plus `path`, so two overlapping globs still report the same package-less directory once per `pattern` (a declared glob's no-op `./` prefix is normalised away, so one glob written `"./apps/**"` in `package.json` and `apps/**` in `pnpm-workspace.yaml` stays one entry): a combined run walks the project once per analysis, and a per-analysis `production` mode (`production: { deadCode, health, dupes }`, `--production-health`) can give those walks different file sets, so only the union reports what the run as a whole saw. Each analysis contributes the workspace-discovery list its own config load produced, the same list `fallow list --workspaces` reports, so the combined root can carry an `undeclared-workspace` or `glob-matched-no-package-json` entry that the standalone `dead-code`, `check`, `health`, and `dupes` envelopes, which read the process diagnostics registry instead, do not. `fallow audit --format json` and the `audit-brief` envelope are on the same broad side: they fold the dead-code analysis's own list into their `dead_code.workspace_diagnostics[]`, so they too report an `undeclared-workspace` entry the standalone envelopes miss. The CLI and the programmatic route (MCP code mode, NAPI, embedders) agree on everything an analysis records: both folds close with the same process-registry read, which covers what an analysis records after its section captured its list (a `source-read-failure`, or the analysis-stage kinds a health run's own dead-code precompute records) and skips `skipped-large-file`, `skipped-minified-file`, and `skipped-source-dotdir`, since those reach an envelope only from the walk that recorded them. The two analysis-stage kinds (`malformed-pnpm-workspace-yaml`, `bun-lockb-override-resolution-skipped`) are recorded by the dead-code analyze pass, so they only appear on runs that include it: `fallow dupes --format json` and `fallow --only dupes` report the workspace-discovery and source-discovery kinds alone. A malformed ROOT `package.json` exits 2 at config load; everything else warns and continues.
 
@@ -447,7 +453,7 @@ Human output groups paths under "Shared with your team (commit these)" and "Loca
 {
   "kind": "agent-install",
   "schema_version": 1,
-  "fallow_version": "3.29.0",
+  "fallow_version": "3.30.0",
   "root": "/abs/path",
   "mode": "install",
   "dry_run": false,
@@ -651,7 +657,7 @@ fallow health --format json --quiet --trend
 {
   "kind": "health",
   "schema_version": 7,
-  "version": "3.29.0",
+  "version": "3.30.0",
   "elapsed_ms": 32,
   "summary": {
     "files_analyzed": 482,
@@ -1054,7 +1060,7 @@ fallow audit \
 {
   "kind": "audit",
   "schema_version": 7,
-  "version": "3.29.0",
+  "version": "3.30.0",
   "command": "audit",
   "verdict": "fail",
   "changed_files_count": 12,
@@ -1110,6 +1116,13 @@ Detects feature flag patterns in the codebase. Identifies environment variable f
 | Flag | Type | Default | Description |
 |---|---|---|---|
 | `--top` | `string` | - | Show only the top N flags |
+| `--retirement` | `bool` | `false` | Add a retirement report: one row per flag, with the reasons the flag can be retired. Advisory only; nothing is removed |
+| `--reason` | `single-read-site\|test-only\|literal-constant\|identical-branches\|empty-branch\|guards-dead-code\|defined-never-read\|fully-rolled-out\|archived-in-vendor\|missing-in-vendor\|vendor-only` | - | Keep only retirement rows with this reason (repeatable) |
+| `--sort` | `age\|sites\|name` | `age` | Order of the retirement rows |
+| `--flag-age` | `blame\|pickaxe\|off` | `blame` | How to measure flag age: blame (lower bound), pickaxe (first commit with the name, slower) or off |
+| `--min-age` | `string` | - | Keep only retirement rows at least this many days old |
+| `--flag-state` | `string` | - | Vendor flag export (JSON, read offline) that adds the fully-rolled-out, archived-in-vendor, missing-in-vendor and vendor-only reasons |
+| `--max-flag-age` | `string` | - | Exit with code 1 when a flag in scope is older than this many days. Opt-in; needs a flag age |
 
 Common global flags for this command: [`--format`](#global-flags), [`--quiet`](#global-flags), [`--changed-since`](#global-flags), [`--workspace`](#global-flags).
 <!-- generated:flags:flags:end -->
@@ -1122,6 +1135,10 @@ fallow flags --format json --quiet
 # Top 10 flags
 fallow flags --format json --quiet --top 10
 
+# Flags at least 90 days old, oldest first. A row with an empty
+# `reasons` array is not a retirement candidate.
+fallow flags --retirement --min-age 90 --format json --quiet
+
 # Single workspace package
 fallow flags --format json --quiet --workspace my-package
 ```
@@ -1131,7 +1148,7 @@ fallow flags --format json --quiet --workspace my-package
 ```json
 {
   "schema_version": 7,
-  "version": "3.29.0",
+  "version": "3.30.0",
   "elapsed_ms": 116,
   "feature_flags": [],
   "total_flags": 0
@@ -1232,7 +1249,7 @@ fallow security --gate newly-reachable --changed-since origin/main
 {
   "kind": "security",
   "schema_version": "4",
-  "version": "3.29.0",
+  "version": "3.30.0",
   "elapsed_ms": 42,
   "config": {
     "rules": {
@@ -1261,7 +1278,7 @@ fallow security --gate newly-reachable --changed-since origin/main
 {
   "kind": "security",
   "schema_version": "4",
-  "version": "3.29.0",
+  "version": "3.30.0",
   "elapsed_ms": 42,
   "config": {
     "rules": {
@@ -1386,12 +1403,17 @@ The target is a positional argument, formatted as `FILE:SYMBOL` (for example `sr
 ```bash
 fallow trace src/utils.ts:formatDate
 fallow trace src/utils.ts:formatDate --callers --depth 3
+fallow trace --path src/main.ts src/chart.ts --format json --quiet
+fallow trace --path src/main.ts src/chart.ts --eager-only --format json --quiet
 ```
+
+Each `--path` hop carries `type_only` and `dynamic`. A `dynamic` hop loads its target only on demand (`import()`, a lazy glob) or on another thread (a worker, a fork). `--eager-only` follows static value imports only, so its route explains why a module is in the `--entry-weight` eager set of `fallow list`.
 
 <!-- generated:flags:trace:start -->
 | Flag | Type | Default | Description |
 |---|---|---|---|
 | `--path` | `string` | - | Shortest import path between two modules, as two file paths (e.g. `--path src/app.ts src/db.ts`). Mutually exclusive with the symbol target and the call-chain flags |
+| `--eager-only` | `bool` | `false` | With `--path`, follow only static value imports, so the route explains why TO loads before FROM runs. `import()`, lazy globs, worker loads and `import type` do not qualify |
 | `--callers` | `bool` | `false` | Walk UP to callers (modules that import the symbol). When neither `--callers` nor `--callees` is set, both directions are walked |
 | `--callees` | `bool` | `false` | Walk DOWN to callees (the symbol's module's import-symbol edges plus unresolved call sites). When neither flag is set, both are walked |
 | `--depth` | `string` | - | Chain depth bound for both directions (default 2). Symbol-level is best-effort, so a shallow bound keeps the trace legible |
@@ -2034,7 +2056,7 @@ The HTTP layer mirrors the bash `gh_api_retry` / `curl_retry` helpers: `FALLOW_A
 {
   "kind": "dead-code",
   "schema_version": 7,
-  "version": "3.29.0",
+  "version": "3.30.0",
   "elapsed_ms": 45,
   "total_issues": 12,
   "entry_points": {
@@ -2194,7 +2216,7 @@ When `--baseline` is used in combined output, the JSON includes a `baseline_delt
 {
   "kind": "dupes",
   "schema_version": 7,
-  "version": "3.29.0",
+  "version": "3.30.0",
   "elapsed_ms": 82,
   "total_clones": 15,
   "total_lines_duplicated": 230,
@@ -2238,11 +2260,11 @@ When running `fallow` with no subcommand (all analyses), the JSON output combine
 {
   "kind": "combined",
   "schema_version": 7,
-  "version": "3.29.0",
+  "version": "3.30.0",
   "elapsed_ms": 159,
   "check": {
     "schema_version": 7,
-    "version": "3.29.0",
+    "version": "3.30.0",
     "elapsed_ms": 45,
     "total_issues": 12,
     "unused_files": [],
