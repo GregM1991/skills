@@ -10,6 +10,8 @@ Find unnecessary scope, repeated domain logic, avoidable state, and duplicate te
 
 Prioritize simplicity and elegance while preserving required behavior.
 
+A review can finish with no findings. A large diff can be justified by its requirements.
+
 Produce a review. Make code changes only when the user also requests them.
 
 ## 1. Establish fresh context
@@ -46,11 +48,21 @@ Evaluate the conventions themselves when they contribute to complexity. A useful
 
 For each such suggestion, cite the relevant instruction and flag the departure. Explain why the alternative is simpler, what behavior it preserves, and its tradeoffs. Present the recommendation for the developer to decide. Keep the recommendation distinct from authorization to change the code or documentation.
 
-Map the changed files to requirements and implementation areas. Record missing requirements as uncertainty. Confirm a change is unnecessary before proposing its removal.
+Build a complete changed-file inventory and map it to requirements and implementation areas. Account for frontend, backend, shared types, persistence, tests and fixtures, build and deployment tooling, and documentation wherever they appear in the diff. Record missing requirements as uncertainty. Confirm a change is unnecessary before proposing its removal.
+
+Use that map to find relevant skills in the available catalog and [Greg's skills repository](https://github.com/GregM1991/skills). Prefer an available local checkout; otherwise inspect the relevant files in the repository. Read selected `SKILL.md` files in full.
+
+For React changes, consider `review-react-codebase-red-flags` for maintainability, `improve-frontend-architecture` for module boundaries, `react-performance-guidelines` for state and update paths, and `build-react-codebase-guidelines` for implementation conventions.
+
+Default to at most four optional skills. Use fewer when they cover the review's questions. Read mandatory repository instructions and their required references regardless of this budget.
 
 This step is complete when every changed area is accounted for, applicable documentation has been read, and the behavior to preserve is explicit.
 
 ## 3. Examine the design
+
+For large diffs spanning several areas, use up to three specialist scouts when they improve coverage. Split the work by area, such as frontend, backend, and tests/tooling. Give each scout the fixed comparison, its file scope, the accepted requirements, and pointers to applicable instructions and skills. Ask for code evidence, candidate simplifications, and coverage gaps.
+
+The lead reviewer covers remaining areas, checks interactions between areas, and verifies scout findings against the code before including them in the final review.
 
 Read the changed code and enough surrounding code to verify each candidate finding.
 
@@ -61,15 +73,16 @@ Check each area through these questions:
 | Scope | Which changes are required by the spec? Which can leave this change without breaking acceptance criteria or a required dependency? |
 | Domain logic | Where does the same rule have multiple owners? Can one existing operation own validation, transitions, or persistence? |
 | State | Which values can be derived? Which state copies require synchronization? Can the model represent fewer invalid combinations? |
+| Frontend | Are component boundaries, props, hooks, forms, and state ownership easy to follow? Where do UI paths repeat commands or presentation rules? Can they share an owner while preserving interaction, selection, and Undo behavior? |
 | Tests | What behavior and failure boundary does each test protect? Which tests repeat that protection without adding a distinct case? |
 
 Also inspect helpers, wrappers, and configuration introduced by the change. Check whether they reduce caller complexity or distribute one operation across more places.
 
-For shared logic, verify that the callers follow the same domain rule. For test removal, identify the coverage that remains.
+When implementations look duplicated, compare their validation, provenance updates, state transitions, and error handling. Trace differences to requirements to distinguish intentional policy from accidental inconsistency. A shared implementation must preserve each caller's required behavior. For test removal, identify the coverage that remains.
 
 Distinguish complexity introduced by the change from existing complexity it merely touches.
 
-This step is complete when each changed area has been checked or recorded as unreviewed with a reason.
+This step is complete when each changed area has been checked or recorded as unreviewed with a reason. When the diff includes frontend work, record its coverage explicitly, even if it produces no findings.
 
 ## 4. Verify the proposed simplifications
 
@@ -82,23 +95,22 @@ For each candidate:
 - Identify the checks needed to confirm behavior is preserved.
 - State migration costs, tradeoffs, and unresolved assumptions.
 
+Use a small isolated experiment when it can resolve uncertainty about a behavioral difference. Keep it separate from application data and source changes. Record the inputs, result, and limits of what it proves. An isolated result supports only the behavior it exercises.
+
 Retain findings whose benefit exceeds the complexity of making and maintaining the change. Prefer an existing operation when it already owns the required behavior.
+
+Keep promising ideas that need more evidence or a design decision as exploration tasks. Record the code evidence, unresolved question, smallest useful investigation, and decision needed from the developer.
 
 Treat line counts as supporting evidence. Preserve required validation, compatibility, and distinct test coverage.
 
+This step is complete when each candidate is a supported recommendation, an exploration task, or a rejected idea with a reason.
+
 ## 5. Return the review
 
-Start with whether the change has material simplification opportunities.
+Start with whether the change has material simplification opportunities. Rank supported recommendations by expected benefit and change risk. Include the evidence, design, behavior to preserve, tradeoffs, and validation from step 4. Flag departures from repository guidance as described in step 2.
 
-Rank findings by expected benefit and change risk. For each finding, include:
+Present exploration tasks separately. Follow up with the developer using a specific question, the viable options, and a recommended next step. Make clear what must be resolved before the idea is ready to implement.
 
-- Location and evidence.
-- Proposed design.
-- Required behavior preserved.
-- Benefit and tradeoff.
-- Validation needed.
-- Any departure from repository guidance, with the source instruction, reason for the departure, and decision needed from the developer.
+State the reviewed base and target, coverage gaps, and which claims were verified from code or execution. If no material simplification is justified, say so.
 
-State the reviewed base and target, coverage gaps, and which claims were verified from code or execution.
-
-If no material simplification is justified, say so. A review can finish with no findings.
+This step is complete when the developer has the review and specific questions for any unresolved decisions.
