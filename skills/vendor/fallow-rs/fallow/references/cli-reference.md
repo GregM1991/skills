@@ -230,6 +230,8 @@ By default, `fallow dupes` skips generated framework output matching `**/.next/*
 | `--cross-language` | `bool` | `false` | Strip type annotations for TS↔JS matching |
 | `--ignore-imports` | `bool` | `false` | Exclude module wiring from clone detection |
 | `--no-ignore-imports` | `bool` | `false` | Count module wiring as clone candidates (opt out of the default exclusion) |
+| `--ignore-symlinks` | `bool` | `false` | Omit clone instances whose path is a symlink, or lies under a symlinked directory. A clone group with fewer than two remaining instances is not reported. Without this flag, JSON output marks these instances with `is_symlink: true` |
+| `--no-ignore-symlinks` | `bool` | `false` | Report symlinked clone instances (opt out of a config `duplicates.ignoreSymlinks: true`) |
 | `--top` | `string` | - | Show only the N highest-ranked clone groups. Ranking multiplies token count and occurrences, then adds a capped spread boost for distant files or same-file locations. `clone_families[]` narrows with the groups. Summary stats reflect the scoped project; `clone_groups_shown` / `clone_groups_omitted` and `clone_families_shown` / `clone_families_omitted` report both splits. Refused with exit code 2 alongside `--group-by`, which reports per-bucket stats over every clone group in a bucket that a global top-N truncation would contradict. |
 | `--no-fragments` | `bool` | `false` | Omit the verbatim source text from each clone instance in `--format json`. The file and line/column range still address the same code, and this is most of the payload on a duplicated codebase |
 | `--trace` | `string` | - | Deep-dive clones. `FILE:LINE` traces all clones at a location; `dup:<id>` traces a clone group by the stable fingerprint shown in the listing and on `clone_groups[].fingerprint` in JSON. Fingerprints are usually `dup:<8hex>` and widen only on rare report collisions. Trace output adds an extract-function suggestion, estimated savings, and a best-effort proposed name per group |
@@ -455,7 +457,7 @@ Human output groups paths under "Shared with your team (commit these)" and "Loca
 {
   "kind": "agent-install",
   "schema_version": 1,
-  "fallow_version": "3.30.0",
+  "fallow_version": "3.31.0",
   "root": "/abs/path",
   "mode": "install",
   "dry_run": false,
@@ -659,7 +661,7 @@ fallow health --format json --quiet --trend
 {
   "kind": "health",
   "schema_version": 7,
-  "version": "3.30.0",
+  "version": "3.31.0",
   "elapsed_ms": 32,
   "summary": {
     "files_analyzed": 482,
@@ -1062,7 +1064,7 @@ fallow audit \
 {
   "kind": "audit",
   "schema_version": 7,
-  "version": "3.30.0",
+  "version": "3.31.0",
   "command": "audit",
   "verdict": "fail",
   "changed_files_count": 12,
@@ -1150,7 +1152,7 @@ fallow flags --format json --quiet --workspace my-package
 ```json
 {
   "schema_version": 7,
-  "version": "3.30.0",
+  "version": "3.31.0",
   "elapsed_ms": 116,
   "feature_flags": [],
   "total_flags": 0
@@ -1251,7 +1253,7 @@ fallow security --gate newly-reachable --changed-since origin/main
 {
   "kind": "security",
   "schema_version": "4",
-  "version": "3.30.0",
+  "version": "3.31.0",
   "elapsed_ms": 42,
   "config": {
     "rules": {
@@ -1280,7 +1282,7 @@ fallow security --gate newly-reachable --changed-since origin/main
 {
   "kind": "security",
   "schema_version": "4",
-  "version": "3.30.0",
+  "version": "3.31.0",
   "elapsed_ms": 42,
   "config": {
     "rules": {
@@ -1849,6 +1851,7 @@ Available on all commands:
 | `--no-cache` | `bool` | `false` | Disable incremental caching |
 | `--threads` | `string` | - | Number of parser threads |
 | `--changed-since` | `string` | - | Only report issues in files changed since this git ref (e.g., main, HEAD~5) |
+| `--no-package-baselines` | `bool` | `false` | Ignore the per-package refs of `workspaces.changedSince` for this run |
 | `--diff-file` | `string` | - | Unified diff for line-level scoping. Use `-` to read from stdin. Project-level findings still bypass this filter. When both this and `--changed-since` are set, the diff filter wins for finding scope while `--changed-since` still drives file discovery |
 | `--diff-stdin` | `bool` | `false` | Read the unified diff from stdin. Equivalent to `--diff-file -` |
 | `--churn-file` | `string` | - | Import change history from a `fallow-churn/v1` JSON file instead of `git log`, powering hotspots, ownership, and bus-factor on projects with no git repository (Yandex Arc, Mercurial, Perforce). A small wrapper translates your VCS log into the contract. Resolved relative to `--root`. Affects `health --hotspots` / `--ownership` / `--targets` only; `audit`, `impact`, and `--changed-since` still require git |
@@ -1894,6 +1897,8 @@ Available on all commands:
 | `--dupes-cross-language` | `bool` | `false` | Enable cross-language duplicate detection in combined mode |
 | `--dupes-ignore-imports` | `bool` | `false` | Exclude module wiring from duplicate detection in combined mode |
 | `--dupes-no-ignore-imports` | `bool` | `false` | Count module wiring as clone candidates in combined mode (opt out of the default exclusion) |
+| `--dupes-ignore-symlinks` | `bool` | `false` | Omit clone instances whose path is a symlink, or lies under a symlinked directory, in combined mode |
+| `--dupes-no-ignore-symlinks` | `bool` | `false` | Report symlinked clone instances in combined mode (opt out of a config `duplicates.ignoreSymlinks: true`) |
 | `--score` | `bool` | `false` | Compute health score (0-100 with letter grade) in combined mode. Enables the health delta header in PR comments. JSON includes `health_score` object with `score`, `grade`, and `penalties` breakdown |
 | `--trend` | `bool` | `false` | Compare current health metrics against saved snapshot. Implies `--score`. Shows per-metric deltas with directional indicators. Requires at least one saved snapshot in `.fallow/snapshots/` |
 | `--save-snapshot` | `string` | - | Save vital signs snapshot for trend tracking. Default path: `.fallow/snapshots/<timestamp>.json`. Forces file-scores + hotspot computation |
@@ -1958,6 +1963,7 @@ These are global flags with behavior specific to bare `fallow` combined mode.
 | `FALLOW_EXTENDS_TIMEOUT_SECS` | Timeout for fetching remote config inheritance in seconds (default: `5`). Do not raise this for untrusted sources. |
 | `FALLOW_CACHE_DIR` | Override the persistent extraction cache directory. Wins over `cache.dir`. Useful for read-only checkouts or CI cache volumes. `--no-cache` disables this knob. |
 | `FALLOW_CACHE_MAX_SIZE` | Maximum on-disk extraction cache (`.fallow/cache.bin`) size in megabytes (default: `256`). Triggers LRU eviction when crossed. Wins over `cache.maxSizeMb` config field. Intended for CI runners with disk quotas. `--no-cache` short-circuits this knob. |
+| `FALLOW_PACKAGE_BASELINES` | Set to `false`, `0`, `no` or `off` to ignore `workspaces.changedSince` for every run of the process, like `--no-package-baselines`. Other values keep the map. |
 | `FALLOW_COVERAGE` | Path to Istanbul or raw V8 coverage data for exact CRAP scoring in `health`, `audit`, and bare `fallow`. |
 | `FALLOW_COVERAGE_ROOT` | Absolute coverage-data prefix to strip before matching Istanbul paths in `health`, `audit`, and bare `fallow`. |
 | `FALLOW_TYPE_AWARE` | Enable or disable TypeScript semantic (type-aware) analysis for the run. Accepts `true`/`false`/`1`/`0`/`yes`/`no`/`on`/`off`; any other value is a hard error. Sits mid-chain in the precedence: the `--type-aware`/`--no-type-aware` CLI flags win over it, and it wins over the `audit.typeAware` config field, which wins over `typeAware.enabled`. |
@@ -2066,7 +2072,7 @@ The HTTP layer mirrors the bash `gh_api_retry` / `curl_retry` helpers: `FALLOW_A
 {
   "kind": "dead-code",
   "schema_version": 7,
-  "version": "3.30.0",
+  "version": "3.31.0",
   "elapsed_ms": 45,
   "total_issues": 12,
   "entry_points": {
@@ -2226,7 +2232,7 @@ When `--baseline` is used in combined output, the JSON includes a `baseline_delt
 {
   "kind": "dupes",
   "schema_version": 7,
-  "version": "3.30.0",
+  "version": "3.31.0",
   "elapsed_ms": 82,
   "total_clones": 15,
   "total_lines_duplicated": 230,
@@ -2270,11 +2276,11 @@ When running `fallow` with no subcommand (all analyses), the JSON output combine
 {
   "kind": "combined",
   "schema_version": 7,
-  "version": "3.30.0",
+  "version": "3.31.0",
   "elapsed_ms": 159,
   "check": {
     "schema_version": 7,
-    "version": "3.30.0",
+    "version": "3.31.0",
     "elapsed_ms": 45,
     "total_issues": 12,
     "unused_files": [],
@@ -2486,6 +2492,7 @@ preset = "bulletproof"
 - `dynamicallyLoaded`: glob patterns for files loaded at runtime (plugin dirs, locale files); treated as always-used
 - `cache.dir`: override the persistent extraction cache directory. `FALLOW_CACHE_DIR` wins over this config field, and `--no-cache` disables caching entirely
 - `cache.maxSizeMb`: cap the serialized extraction cache size in megabytes. `FALLOW_CACHE_MAX_SIZE` wins over this config field
+- `workspaces.changedSince`: map exact workspace roots (as `fallow list --workspaces` prints them) to Git refs. `check`, `dead-code` and `dupes` then report the findings of a mapped package only for files changed since its ref; unlisted packages and root files stay in full scope. A global `--changed-since` replaces the map for one run; `--no-package-baselines` or `FALLOW_PACKAGE_BASELINES=false` turns it off. A key that names no workspace, or a ref Git cannot resolve, leaves every package in full scope with a warning and `request_outcomes["package-baselines"]` as `not-applied`. Save a whole-project baseline with `--no-package-baselines`.
 - `usedClassMembers`: class method/property names that extend the built-in Angular/React lifecycle allowlist with framework-invoked names. Each entry is a plain string (global suppression) or a scoped object `{ extends?, implements?, members }` matching only classes with the given heritage. Strings can be exact names (`"agInit"`) or glob patterns (`"*"` matches every member, `"enter*"` prefix, `"*Handler"` suffix, `"on*Event"` combined). Use scoped rules for common names like `refresh` or `execute` to avoid false negatives on unrelated classes; global strings for unique names like `agInit`. Example: `["agInit", { "implements": "ICellRendererAngularComp", "members": ["refresh"] }, { "extends": "BaseCommand", "members": ["execute"] }, { "extends": "GrammarBaseListener", "members": ["enter*", "exit*"] }]`. Glob patterns that match zero members emit a `WARN` so dead allowlist entries surface. An unconstrained scoped rule (no `extends` or `implements`) is rejected at load time. Use plugin-level `usedClassMembers` in a `.fallow/plugins/*.jsonc` file for library-specific allowlists
 - `resolve.conditions`: additional package.json `exports` / `imports` condition names to honor during module resolution. Baseline conditions (`development`, `import`, `require`, `default`, `types`, `node`, plus `react-native` / `browser` under RN/Expo) are always included; user entries prepend ahead of them. Use for community conditions like `worker`, `edge-light`, `deno`, or custom bundler conditions. Example: `{ "resolve": { "conditions": ["worker", "edge-light"] } }`
 - `unusedComponentProps.ignorePattern`: opt-in regex that exempts a component prop from `unused-component-props` when the prop's LOCAL destructure binding name matches (the leading-underscore "accepted-but-intentionally-unused" convention, mirroring TS `noUnusedParameters` + ESLint `varsIgnorePattern` / `argsIgnorePattern`). Applies to Vue, Svelte, Astro, and React/Preact props. The match is on the local alias (`_stage` in `let { stage: _stage } = $props()`), not the public prop name the finding reports (`stage`); matching is unanchored like ESLint's `RegExp.test`, so anchor with `^_`. An invalid regex fails config load. Example: `{ "unusedComponentProps": { "ignorePattern": "^_" } }`
