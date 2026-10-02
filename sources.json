@@ -296,6 +296,40 @@
       ]
     },
     {
+      "id": "coldteadotai-pr-lens",
+      "description": "Two skills: pr-lens and eli5. Uses upstream's installable skill trees.",
+      "owner": "coldteadotai",
+      "repoName": "pr-lens",
+      "url": "https://github.com/coldteadotai/pr-lens",
+      "ref": "HEAD",
+      "licensePaths": [
+        "LICENSE"
+      ],
+      "lastSyncedAt": "2026-10-02T02:02:41.995Z",
+      "resolvedCommit": "402dc6600b682da48e7191cb067ab355944947e7",
+      "mode": "explicit",
+      "skills": [
+        {
+          "name": "pr-lens",
+          "paths": [
+            {
+              "from": "skills/pr-lens",
+              "to": "."
+            }
+          ]
+        },
+        {
+          "name": "eli5",
+          "paths": [
+            {
+              "from": "skills/eli5",
+              "to": "."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "mattpocock-skills",
       "description": "All skills under the listed categories, category level flattened away on vendor. Tracks the default branch, matching decision 4 (nightly sync, no review gate, no pin). The pin at 8b78b53 used by the gm-pi-environment Pi extension belongs only to that extension and is not followed here.",
       "owner": "mattpocock",
