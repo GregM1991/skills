@@ -113,6 +113,8 @@ Full tool catalogue, resource catalogue, key params, runtime source-map confiden
 - [Similar Code](references/similar-code.md): snapshot-stable discovery, inspection, and verdict workflow
 - [Node Bindings](references/node-bindings.md): embed the analysis engine in a Node.js process via NAPI
 
+To set up or modernize the code-quality tooling of a repository (package install, config, agent wiring, CI gate), use the `fallow-setup` skill.
+
 ## Common Workflows
 
 ### Audit a project for cleanup opportunities
@@ -240,7 +242,7 @@ fallow health --format json --quiet --group-by owner --score --ownership --save-
 fallow health --format json --quiet --group-by owner --score --workspace 'packages/*'
 ```
 
-`--group-by owner` partitions every metric by CODEOWNERS team (last-match-wins, GitHub semantics) with a directory-cached native resolver, so there is no need to parse CODEOWNERS or aggregate per owner yourself. With `--score`, each `groups[]` entry carries a first-class `health_score` (`{ score, grade, penalties: { dead_files, complexity, p90_complexity, maintainability, unused_deps, circular_deps, unit_size, coupling, duplication } }`) alongside its own `vital_signs` and per-file `file_scores[]` (`complexity_density`, `maintainability_index`). Human output renders a `● Per-owner health` table (`score / grade / files / hot`). `--save-snapshot` records a point-in-time entry that `--trend` reads later. This one command replaces a hand-rolled CODEOWNERS-resolution + per-owner-aggregation + scoring script end to end.
+`--group-by owner` partitions every metric by CODEOWNERS team (last-match-wins, GitHub semantics) with a native resolver, so there is no need to parse CODEOWNERS or aggregate per owner yourself. With `--score`, each `groups[]` entry carries a first-class `health_score` (`{ score, grade, penalties: { dead_files, complexity, p90_complexity, maintainability, unused_deps, circular_deps, unit_size, coupling, duplication } }`) alongside its own `vital_signs` and per-file `file_scores[]` (`complexity_density`, `maintainability_index`). Human output renders a `● Per-owner health` table (`score / grade / files / hot`). `--save-snapshot` records a point-in-time entry that `--trend` reads later. This one command replaces a hand-rolled CODEOWNERS-resolution + per-owner-aggregation + scoring script end to end.
 
 Caveat for root-only path aliases: in monorepos where TypeScript path aliases (e.g. `@myorg/*`) are declared only in a root `tsconfig.base.json` that the per-package `tsconfig.json` files do not extend, imports through those aliases do not resolve, so dead-code signals (unused files/exports, and the `dead_files` penalty in the per-owner `health_score`) carry false positives. The complexity, maintainability, coupling, hotspot, and ownership signals are computed per file from the AST and git history and stay accurate regardless. Prefer `health` (not `dead-code`) for per-team quality tracking there.
 
@@ -375,7 +377,7 @@ export const deprecatedHelper = () => {};
 ## Key Gotchas
 
 - **`fix --yes` is required** in non-TTY (agent) environments. Without it, `fix` exits with code 2
-- **Zero config by default.** Built-in framework plugins auto-detect, including Wuchale config, Contentlayer content roots, tap and tsd test entry points. Read `fallow schema.plugins` for the current registry and don't create config unless customization is needed
+- **Zero config by default.** Built-in framework plugins auto-detect, including Wuchale config, Contentlayer content roots, Kibana `kibana.jsonc` plugin entries, tap and tsd test entry points. Read `fallow schema.plugins` for the current registry and don't create config unless customization is needed
 - **Syntactic analysis only.** No TypeScript compiler, so fully dynamic `import(variable)` is not resolved
 - **Function overloads are deduplicated.** TypeScript function overload signatures are merged into a single export (not reported as separate unused exports)
 - **Re-export chains are resolved.** Exports through barrel files are tracked, not falsely flagged
