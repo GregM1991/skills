@@ -1,0 +1,6 @@
+interface:
+  display_name: "Agent QA"
+  short_description: "Manual browser QA with recordings and evidence"
+  default_prompt: "Use $agent-qa to test the requested app flow, prefer T3's browser, and report findings with screenshots and recordings."
+policy:
+  allow_implicit_invocation: false
