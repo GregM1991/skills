@@ -34,7 +34,7 @@ This skill is _informed_ by the project's domain model and frontend architecture
 
 ### 1. Explore
 
-Read the project's domain glossary, frontend architecture guidance, and any ADRs in the area you're touching first. In many projects this means files such as `CONTEXT.md`, `docs/adr/`, route guidance, component guidance, form architecture docs, design-system docs, and testing docs.
+Read root `GLOSSARY.md` where available. If root `GLOSSARY-MAP.md` exists, read it and the relevant context glossaries. Then read frontend architecture guidance and ADRs for the area you're touching, including route, component, form, design-system, and testing guidance.
 
 Then use the Agent tool with `subagent_type=Explore` to walk the frontend codebase. Don't follow rigid heuristics — explore organically and note where you experience friction:
 
@@ -58,7 +58,7 @@ Present a numbered list of frontend deepening opportunities. For each candidate:
 - **Solution** — plain English description of what would change
 - **Benefits** — explained in terms of locality and leverage, and also in how tests, accessibility, route simplicity, and user consistency would improve
 
-Use project vocabulary for the domain, and [LANGUAGE.md](LANGUAGE.md) vocabulary for the architecture. If `CONTEXT.md` defines "Session," talk about "the Session artifacts module" — not "the route thing." If project docs distinguish route modules from UI modules, preserve that language while still using **Module**, **Interface**, **Implementation**, **Seam**, **Adapter**, **Leverage**, and **Locality**.
+Use project vocabulary for the domain, and [LANGUAGE.md](LANGUAGE.md) vocabulary for the architecture. If the owning `GLOSSARY.md` defines "Session," use "the Session artifacts module." If project docs distinguish route modules from UI modules, preserve that language while still using **Module**, **Interface**, **Implementation**, **Seam**, **Adapter**, **Leverage**, and **Locality**.
 
 **ADR or guidance conflicts**: if a candidate contradicts existing route/component/form guidance or an ADR, only surface it when the friction is real enough to warrant revisiting that decision. Mark it clearly (for example, _"contradicts route guidance — but worth reopening because…"_). Don't list every theoretical refactor a project convention forbids.
 
@@ -70,8 +70,8 @@ Once the user picks a candidate, drop into a grilling conversation. Walk the des
 
 Side effects happen inline as decisions crystallize:
 
-- **Naming a deepened module after a concept not in `CONTEXT.md`?** Add the term to `CONTEXT.md`. Create the file lazily if it doesn't exist.
-- **Sharpening a fuzzy frontend term during the conversation?** Update `CONTEXT.md` right there.
+- **Naming a deepened module after a new domain concept?** Use `domain-modeling` to add the resolved term to its owning `GLOSSARY.md`. Use `GLOSSARY-MAP.md` to locate the context owner; root `GLOSSARY.md` owns shared terms. Create the glossary only when the first term is resolved.
+- **Sharpening a fuzzy frontend term during the conversation?** Update its definition in the owning glossary with `domain-modeling`. Keep implementation contracts in architecture guidance and decisions in ADRs.
 - **User rejects the candidate with a load-bearing reason?** Offer an ADR, framed as: _"Want me to record this as an ADR so future frontend architecture reviews don't re-suggest it?"_ Only offer when the reason would actually be needed by a future explorer to avoid re-suggesting the same thing — skip ephemeral reasons ("not worth it right now") and self-evident ones.
 - **Need to classify dependencies before shaping the seam?** See [DEEPENING.md](DEEPENING.md).
 - **Want to explore alternative interfaces for the deepened module?** See [INTERFACE-DESIGN.md](INTERFACE-DESIGN.md).

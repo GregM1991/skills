@@ -40,7 +40,8 @@ Read applicable agent-facing documentation in full:
 - Root `AGENTS.md` and `CLAUDE.md`.
 - Instructions in ancestor directories and subdirectories that govern changed files.
 - Instructions governing affected callers or locations proposed for moved code.
-- Relevant `CONTEXT.md` files and documents referenced by those instructions.
+- Root `GLOSSARY.md` where available. If root `GLOSSARY-MAP.md` exists, also read it and the relevant context glossaries.
+- Documents referenced by those instructions.
 
 Use the repository's domain terms. Adopt its documented conventions as the starting point for the review. Identify compatibility, migration, security, and operational constraints that explain apparent complexity.
 
