@@ -9,11 +9,15 @@ Test the user's requested website or web application through the browser. Produc
 
 ## Establish the run
 
-Use the conversation to identify the target URL, environment, account if needed, flow, test data and expected end state. Ask only for missing information that blocks safe execution. Existing authorization carries forward. Perform state-changing actions within the requested workflow; a general QA request does not authorize unrelated production writes.
+Resolve the target environment from the request and trusted project configuration. Ask only when a target is unresolved or those sources conflict. Keep the selected target throughout the run. Existing authorization carries forward; a general QA request does not authorize unrelated production writes.
+
+Identify the requested flow, account, test data and expected final state from the conversation and project configuration. List each requested check in run config before setup.
+
+Read [development setup](references/dev.md) for a development target or [production setup](references/prod.md) for a production target. Complete that branch before testing. Use [run helpers](references/helpers.md) to validate config, check URL reachability, create the evidence manifest and count outcomes. Keep credentials and authentication state outside evidence.
 
 Use requested screen sizes. For responsive QA without specified dimensions, use one desktop, tablet and mobile viewport, such as 1440 × 900, 820 × 1180 and 412 × 915. Describe these as browser viewport checks, not physical-device tests.
 
-Create a dated evidence directory outside application source. Record the target, browser backend, viewport sizes and any known revision. Keep credentials and saved authentication state outside report artifacts.
+Record the browser backend and viewport sizes in the evidence directory created by the helper. Record the actual checkout or deployed revision in run config.
 
 ## Choose the browser
 
@@ -35,7 +39,7 @@ If recording is unavailable, disclose the limitation and capture a screenshot se
 
 ## Exercise the flow
 
-Follow the user's steps through the visible UI to the requested end state. Verify persisted results by revisiting or refreshing when appropriate. APIs and logs may explain a failure, but cannot substitute for a browser step being tested.
+First observe the target feature route, with authentication when the flow is gated, then follow the user's steps through the visible UI to the requested end state. Capture evidence for both `target-route` and `final-state`. Verify persisted results by revisiting or refreshing when appropriate. APIs and logs may explain a failure, but cannot substitute for a browser step being tested.
 
 When the flow creates data, create it once and reuse it for responsive checks unless separate records are necessary and authorized. After an uncertain submission, inspect the application's state before retrying so a timeout does not create duplicates.
 
@@ -45,7 +49,7 @@ Stop the flow on a major issue: the main path cannot continue, data is lost or c
 
 ## Finish and report
 
-Stop and save recordings, verify that evidence files exist and open, and close browser sessions created for this run. Leave shared sessions and production records intact unless cleanup was authorized.
+Stop and save recordings. Inspect saved artifacts, then run the helper report with observations for every requested check. Close browser sessions created for this run. Leave shared sessions and production records intact unless cleanup was authorized.
 
 Write a report in the evidence directory with:
 
