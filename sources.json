@@ -13,7 +13,7 @@
       "licensePaths": [
         "LICENSE"
       ],
-      "lastSyncedAt": "2026-10-07T09:55:09.982Z",
+      "lastSyncedAt": "2026-10-08T10:06:56.501Z",
       "resolvedCommit": "afa8da942115f2961fdbfa80807ea0b232ff6c00",
       "mode": "explicit",
       "skills": [
@@ -47,8 +47,8 @@
       "licensePaths": [
         "LICENSE"
       ],
-      "lastSyncedAt": "2026-10-07T09:55:09.982Z",
-      "resolvedCommit": "f7c8b071343dda29477a56cb336ea76144c05496",
+      "lastSyncedAt": "2026-10-08T10:06:56.501Z",
+      "resolvedCommit": "0207911f1bd4d0393eddaa90f2e50f96e0fb8974",
       "mode": "explicit",
       "skills": [
         {
@@ -80,7 +80,7 @@
       "licensePaths": [
         "LICENSE.txt"
       ],
-      "lastSyncedAt": "2026-10-07T09:55:09.982Z",
+      "lastSyncedAt": "2026-10-08T10:06:56.501Z",
       "resolvedCommit": "9b0e00ad1b941165e2506545bbfddafa34cf2cb8",
       "mode": "explicit",
       "skills": [
@@ -105,7 +105,7 @@
       "licensePaths": [
         "LICENSE.md"
       ],
-      "lastSyncedAt": "2026-10-07T09:55:09.982Z",
+      "lastSyncedAt": "2026-10-08T10:06:56.501Z",
       "resolvedCommit": "864e5ba452566c318d60f75229882233b2a5c120",
       "mode": "explicit",
       "skills": [
@@ -130,8 +130,8 @@
       "licensePaths": [
         "LICENSE"
       ],
-      "lastSyncedAt": "2026-10-07T09:55:09.982Z",
-      "resolvedCommit": "bac4b572529d35aef84ecb9e3d3f8089a7715fd8",
+      "lastSyncedAt": "2026-10-08T10:06:56.501Z",
+      "resolvedCommit": "e79e167ad423b813dfd417fa40f098d59313d289",
       "mode": "explicit",
       "skills": [
         {
@@ -155,8 +155,8 @@
       "licensePaths": [
         "LICENSE"
       ],
-      "lastSyncedAt": "2026-10-07T09:55:09.982Z",
-      "resolvedCommit": "48dc9e8eb8aa19040e91cb90ba0b642c9cbad57e",
+      "lastSyncedAt": "2026-10-08T10:06:56.501Z",
+      "resolvedCommit": "87a266971d9460a3d2606075b8e91edc83325472",
       "mode": "explicit",
       "skills": [
         {
@@ -180,8 +180,8 @@
       "licensePaths": [
         "LICENSE"
       ],
-      "lastSyncedAt": "2026-10-07T09:55:09.982Z",
-      "resolvedCommit": "bbcb29d9dee6c94915d760bcfc36818ad5be66ad",
+      "lastSyncedAt": "2026-10-08T10:06:56.501Z",
+      "resolvedCommit": "778c8a7b71ccd5bfe3ca6ac68c15d9d872d0f87d",
       "mode": "explicit",
       "skills": [
         {
@@ -205,8 +205,8 @@
       "licensePaths": [
         "cursor-team-kit/LICENSE"
       ],
-      "lastSyncedAt": "2026-10-07T09:55:09.982Z",
-      "resolvedCommit": "d0ef80d86795816da932a153458c5dbe192d294e",
+      "lastSyncedAt": "2026-10-08T10:06:56.501Z",
+      "resolvedCommit": "ccb5507cec1546dc88135c1139c811e6c59115ba",
       "mode": "explicit",
       "skills": [
         {
@@ -230,7 +230,7 @@
       "licensePaths": [
         "pstack/LICENSE"
       ],
-      "lastSyncedAt": "2026-10-07T09:55:09.982Z",
+      "lastSyncedAt": "2026-10-08T10:06:56.501Z",
       "resolvedCommit": "74dd2291e8e37b12fd6dc49b2acbd655c6bdaf12",
       "mode": "explicit",
       "skills": [
@@ -255,7 +255,7 @@
       "licensePaths": [
         "LICENSE"
       ],
-      "lastSyncedAt": "2026-10-07T09:55:09.982Z",
+      "lastSyncedAt": "2026-10-08T10:06:56.501Z",
       "resolvedCommit": "d18b7aa8ba878354e5c348310230e652f7690f9c",
       "mode": "explicit",
       "skills": [
@@ -280,8 +280,8 @@
       "licensePaths": [
         "LICENSE"
       ],
-      "lastSyncedAt": "2026-10-07T09:55:09.982Z",
-      "resolvedCommit": "a50406d9b7474b060450d2dcaff8743c977d296a",
+      "lastSyncedAt": "2026-10-08T10:06:56.501Z",
+      "resolvedCommit": "0240fa4a84123406a0e5e6e7262e5b772b43f0bd",
       "mode": "explicit",
       "skills": [
         {
@@ -305,7 +305,7 @@
       "licensePaths": [
         "LICENSE"
       ],
-      "lastSyncedAt": "2026-10-07T09:55:09.982Z",
+      "lastSyncedAt": "2026-10-08T10:06:56.501Z",
       "resolvedCommit": "7a9115c8202da4db030be5954ada8862e6135dce",
       "mode": "explicit",
       "skills": [
@@ -339,8 +339,8 @@
       "licensePaths": [
         "LICENSE"
       ],
-      "lastSyncedAt": "2026-10-07T09:55:09.982Z",
-      "resolvedCommit": "dd400c3ad65e57c06f05e832e0aac92c7992f34d",
+      "lastSyncedAt": "2026-10-08T10:06:56.501Z",
+      "resolvedCommit": "b0618bc436ad893b3c5e84e55fba86586d34a404",
       "mode": "categories",
       "categoryRoot": "skills",
       "includeCategories": [
