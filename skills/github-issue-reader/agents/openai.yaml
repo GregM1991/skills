@@ -1,0 +1,6 @@
+interface:
+  display_name: "GitHub issue reader"
+  short_description: "Read tickets and native issue relationships"
+  default_prompt: "Use $github-issue-reader to read the requested GitHub ticket and relevant native relationships."
+policy:
+  allow_implicit_invocation: true

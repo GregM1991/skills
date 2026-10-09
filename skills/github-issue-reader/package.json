@@ -1,0 +1,11 @@
+{
+  "name": "github-issue-reader",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test scripts/issue-read.test.ts"
+  },
+  "dependencies": {
+    "zod": "3.25.76"
+  }
+}
