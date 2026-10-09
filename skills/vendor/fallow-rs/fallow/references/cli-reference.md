@@ -79,6 +79,7 @@ Every fallow command with its purpose and key flags. The table is regenerated fr
 | `explain` | Explain one issue type without running analysis | `<issue-type>`, `--format json` |
 | `audit` | Combined dead-code + complexity + duplication + styling for changed files, returns a verdict; `fallow review` is an alias for `fallow audit --brief` (advisory orientation brief, always exits 0) | `--base`, `--gate`, `--brief`, `--max-decisions`, `--walkthrough-guide`, `--walkthrough-file`, `--show-deprioritized`, `--production`, `--production-dead-code`, `--production-health`, `--production-dupes`, `--workspace`, `--changed-workspaces`, `--ci`, `--fail-on-issues`, `--explain`, `--explain-skipped`, `--dead-code-baseline`, `--health-baseline`, `--dupes-baseline`, `--max-crap`, `--coverage`, `--coverage-root`, `--no-css`, `--css-deep`, `--no-css-deep`, `--include-entry-exports` |
 | `audit-cache` | Maintain reusable audit base-snapshot caches |  |
+| `baselines` | Maintain committed baselines: `baselines prune` removes the entries of fixed findings and never adds one | `prune --check`, `prune --dead-code-baseline`, `prune --health-baseline`, `prune --dupes-baseline` |
 | `decision-surface` | Surface the consequential structural DECISIONS a change embeds (the apex of the review brief), each framed as a judgment question with the routed expert to ask | `--max-decisions` |
 | `impact` | Show what fallow has done for you: how many issues it is surfacing, the trend since the last recorded run, and how many commits it contained at the pre-commit gate | `--all`, `--sort`, `--limit` |
 | `security` | Surface opt-in local security candidates for agent verification (not confirmed vulnerabilities). Rule families include the graph rule `client-server-leak`, a data-driven `tainted-sink` catalogue, and the include-required `hardcoded-secret` category for provider-prefix credentials and high-entropy literals assigned to secret-shaped identifiers. Most catalogue rows require non-literal input; narrowly literal-aware rows flag deterministic unsafe literals. Rules default off; suppress a file with `// fallow-ignore-file security-sink`; scope categories with `security.categories`. Add project-local request object names with `security.requestReceivers`; it extends the built-in `req` / `request` / `ctx` / `context` / `event` allowlist for HTTP `query`, `params`, and `body` reads. `hardcoded-secret` runs only when listed in `security.categories.include`. | `--format human\|json\|sarif`, `--changed-since`, `--file`, `--diff-file`, `--workspace`, `--changed-workspaces`, `--surface`, `--ci`, `--fail-on-issues`, `--sarif-file`, `--summary` |
@@ -217,7 +218,7 @@ fallow dead-code --format json --quiet --include-entry-exports
 
 ## `architecture`: Cycles, Boundaries and Policy Rules
 
-Reports circular dependencies, re-export cycles, package cycles, boundary violations (with boundary coverage and forbidden calls) and rule-pack policy violations. The command runs the `dead-code` analysis with these issue types selected. The JSON output is the `dead-code` envelope (`kind: "dead-code"`) with the same arrays, finding ids, exit codes and baselines. The global scope and output flags (`--format`, `--changed-since`, `--workspace`, `--baseline`, `--save-baseline`) work as on `dead-code`.
+Reports circular dependencies, re-export cycles, package cycles, boundary violations (with boundary coverage and forbidden calls) and rule-pack policy violations. The command runs the `dead-code` analysis with these issue types selected. The JSON output has `kind: "architecture"` (with `--group-by`: `architecture-grouped`) and its own `schema_version`. The arrays, finding ids, actions, exit codes, gate outcomes and baselines are the same as on `dead-code`. A saved baseline keeps `kind: "dead-code"`. `fallow report --from` renders a saved architecture envelope in every format. The global scope and output flags (`--format`, `--changed-since`, `--workspace`, `--baseline`, `--save-baseline`) work as on `dead-code`.
 
 `fallow dead-code` still reports these findings by default until the next major version. Its `--circular-deps`, `--re-export-cycles`, `--package-cycles`, `--boundary-violations` and `--policy-violations` flags are deprecated aliases. `fallow architecture` reports only part of the issue types, so `--fail-on-stale-baseline` does not gate on it, with any baseline. A baseline that `fallow architecture --save-baseline` writes lists only the architecture findings, and `fallow dead-code` warns when it reads such a baseline.
 
@@ -230,6 +231,21 @@ Reports circular dependencies, re-export cycles, package cycles, boundary violat
 | `--finding-id <ID>` | Only report the findings with these ids |
 
 Without a selection flag, the command reports every architecture issue type.
+
+```json
+{
+  "kind": "architecture",
+  "schema_version": 1,
+  "total_issues": 1,
+  "circular_dependencies": [
+    { "files": ["src/a.ts", "src/b.ts"], "length": 2, "finding_id": "dc1:circular-dependency:...", "actions": [] }
+  ],
+  "boundary_violations": [],
+  "policy_violations": []
+}
+```
+
+The MCP tool is `check_architecture` and the Node binding is `detectArchitecture`.
 
 With `--group-by`, each group shows its findings under one "Architecture" heading.
 
@@ -1989,6 +2005,7 @@ Available on all commands:
 | `--dupes-baseline` | `string` | - | Compare duplication clone groups against a saved baseline in combined mode (produced by `fallow dupes --save-baseline`) |
 | `--health-baseline` | `string` | - | Compare health findings against a saved baseline in combined mode (produced by `fallow health --save-baseline`) |
 | `--include-entry-exports` | `bool` | `false` | Report unused exports in entry files instead of auto-marking them as used |
+| `--show-cascade` | `bool` | `false` | Also report the unused exports, types, class members and enum members of unused files. By default the report hides them, because deleting the file removes them, and counts them in `cascade_hidden` |
 | `--type-aware` | `bool` | `false` | Opt in to TypeScript semantic analysis for project-wide symbol evidence. This does not emit compiler diagnostics or typed lint findings |
 | `--no-type-aware` | `bool` | `false` | Disable TypeScript semantic analysis even when `typeAware.enabled` or `FALLOW_TYPE_AWARE` opts in, keeping this run fully syntactic |
 | `--type-aware-project` | `string` | - | TypeScript project config to use for type-aware analysis (repeatable) |
