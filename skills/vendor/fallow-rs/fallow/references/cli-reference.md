@@ -520,7 +520,7 @@ Human output groups paths under "Shared with your team (commit these)" and "Loca
 {
   "kind": "agent-install",
   "schema_version": 1,
-  "fallow_version": "3.32.0",
+  "fallow_version": "3.33.1",
   "root": "/abs/path",
   "mode": "install",
   "dry_run": false,
@@ -730,7 +730,7 @@ fallow health --format json --quiet --trend
 {
   "kind": "health",
   "schema_version": 7,
-  "version": "3.32.0",
+  "version": "3.33.1",
   "elapsed_ms": 32,
   "summary": {
     "files_analyzed": 482,
@@ -1146,7 +1146,7 @@ fallow audit \
 {
   "kind": "audit",
   "schema_version": 7,
-  "version": "3.32.0",
+  "version": "3.33.1",
   "command": "audit",
   "verdict": "fail",
   "changed_files_count": 12,
@@ -1234,7 +1234,7 @@ fallow flags --format json --quiet --workspace my-package
 ```json
 {
   "schema_version": 7,
-  "version": "3.32.0",
+  "version": "3.33.1",
   "elapsed_ms": 116,
   "feature_flags": [],
   "total_flags": 0
@@ -1335,7 +1335,7 @@ fallow security --gate newly-reachable --changed-since origin/main
 {
   "kind": "security",
   "schema_version": "4",
-  "version": "3.32.0",
+  "version": "3.33.1",
   "elapsed_ms": 42,
   "config": {
     "rules": {
@@ -1364,7 +1364,7 @@ fallow security --gate newly-reachable --changed-since origin/main
 {
   "kind": "security",
   "schema_version": "4",
-  "version": "3.32.0",
+  "version": "3.33.1",
   "elapsed_ms": 42,
   "config": {
     "rules": {
@@ -1498,6 +1498,11 @@ Each `--path` hop carries `type_only` and `dynamic`. A `dynamic` hop loads its t
 <!-- generated:flags:trace:start -->
 | Flag | Type | Default | Description |
 |---|---|---|---|
+| `--dependency` | `string` | - | How the code uses each imported name of a package: file and call counts, one hop through project wrappers, and a count of each use that the trace cannot resolve |
+| `--specifier` | `string` | - | With `--dependency`, report only these imported names (repeatable or comma-separated). Turns on the site page |
+| `--sites` | `bool` | `false` | With `--dependency`, list the usage sites with file, line and column |
+| `--limit` | `string` | - | With `--dependency`, the largest number of sites on a page (1 to 500, default 50). Turns on the site page |
+| `--cursor` | `string` | - | With `--dependency`, the `next_cursor` of the previous page. Turns on the site page |
 | `--path` | `string` | - | Shortest import path between two modules, as two file paths (e.g. `--path src/app.ts src/db.ts`). Mutually exclusive with the symbol target and the call-chain flags |
 | `--eager-only` | `bool` | `false` | With `--path`, follow only static value imports, so the route explains why TO loads before FROM runs. `import()`, lazy globs, worker loads and `import type` do not qualify |
 | `--callers` | `bool` | `false` | Walk UP to callers (modules that import the symbol). When neither `--callers` nor `--callees` is set, both directions are walked |
@@ -1877,7 +1882,7 @@ Uploads retry network failures, HTTP 429, and HTTP 502/503/504 up to three attem
 | `--repo <NAME>` | string | `package.json` `repository.url`, then `git remote get-url origin` parsed to `owner/repo` | Repo identifier used in the source-map API path. Must match the beacon's `projectId` (and `upload-inventory`'s `--project-id`); pass `--repo <bare-name>` explicitly if the beacon reports a bare name. |
 | `--git-sha <SHA>` | string | `$GITHUB_SHA` -> `$CI_COMMIT_SHA` -> `$COMMIT_SHA` -> `git rev-parse HEAD` | Commit SHA, 7-40 hex chars. |
 | `--endpoint <URL>` | string | `$FALLOW_API_URL` or `https://api.fallow.cloud` | Override for staging / on-prem. |
-| `--strip-path <BOOL>` | bool | `true` | Upload basename-only `fileName` values. Use `--strip-path=false` when runtime coverage reports paths like `assets/app.js`. |
+| `--strip-path <BOOL>` | bool | `true` | Upload basename-only `fileName` values. Use `--strip-path=false` when runtime coverage reports paths like `assets/app.js`. Maps that share a basename are sent under their build-directory path, so no map replaces another. The command warns when a map's `sources` do not resolve to files in the repository (for example `sourceRoot: "/"` in `tsconfig.json`). |
 | `--dry-run` | bool | `false` | Print what would upload; no API key or network call. |
 | `--concurrency <N>` | integer | `4` | Parallel upload fanout. |
 | `--fail-fast` | bool | `false` | Stop on the first upload failure. |
@@ -1952,10 +1957,10 @@ Available on all commands:
 | `--diff-stdin` | `bool` | `false` | Read the unified diff from stdin. Equivalent to `--diff-file -` |
 | `--churn-file` | `string` | - | Import change history from a `fallow-churn/v1` JSON file instead of `git log`, powering hotspots, ownership, and bus-factor on projects with no git repository (Yandex Arc, Mercurial, Perforce). A small wrapper translates your VCS log into the contract. Resolved relative to `--root`. Affects `health --hotspots` / `--ownership` / `--targets` only; `audit`, `impact`, and `--changed-since` still require git |
 | `--max-file-size` | `string` | - | Skip source files larger than this many megabytes (default 5) instead of parsing them, guarding against the out-of-memory blowup a single multi-MB generated/vendored/bundled file causes on large repos. Use `0` for no limit. Declaration files (`.d.ts`) are always analyzed. Skipped files are reported and excluded from every analysis. Also settable via `FALLOW_MAX_FILE_SIZE` |
-| `--baseline` | `string` | - | Compare to baseline |
+| `--baseline` | `string` | - | Compare to baseline. On bare `fallow` it holds the dead-code baseline only; use `--health-baseline` and `--dupes-baseline` for the others |
 | `--baseline-mode` | `count\|identity` | - | How `--baseline` matches health findings: per file and category (`count`, the default) or per function identity (`identity`, strict, and only against a baseline saved with `--baseline-mode identity`; such a baseline still reads in count mode). Identity is file path plus function name, so renaming or moving a function that is still in the baseline reports it as new; re-save after that kind of refactor. |
 | `--parent-run` | `string` | - | Correlate this run with a previous telemetry analysis run |
-| `--save-baseline` | `string` | - | Save results as baseline |
+| `--save-baseline` | `string` | - | Save results as baseline. On bare `fallow` it saves the dead-code baseline only |
 | `--production` | `bool` | `false` | Exclude test/dev files, only start/build scripts (applies to every analysis) |
 | `--no-production` | `bool` | `false` | Force production mode OFF for every analysis, overriding a project config's `production: true` (and `FALLOW_PRODUCTION`). Conflicts with `--production` |
 | `--production-dead-code` | `bool` | `false` | Run dead-code analysis in production mode when using bare combined mode |
@@ -2174,7 +2179,7 @@ The HTTP layer mirrors the bash `gh_api_retry` / `curl_retry` helpers: `FALLOW_A
 {
   "kind": "dead-code",
   "schema_version": 7,
-  "version": "3.32.0",
+  "version": "3.33.1",
   "elapsed_ms": 45,
   "total_issues": 12,
   "entry_points": {
@@ -2334,7 +2339,7 @@ When `--baseline` is used in combined output, the JSON includes a `baseline_delt
 {
   "kind": "dupes",
   "schema_version": 7,
-  "version": "3.32.0",
+  "version": "3.33.1",
   "elapsed_ms": 82,
   "total_clones": 15,
   "total_lines_duplicated": 230,
@@ -2378,11 +2383,11 @@ When running `fallow` with no subcommand (all analyses), the JSON output combine
 {
   "kind": "combined",
   "schema_version": 7,
-  "version": "3.32.0",
+  "version": "3.33.1",
   "elapsed_ms": 159,
   "check": {
     "schema_version": 7,
-    "version": "3.32.0",
+    "version": "3.33.1",
     "elapsed_ms": 45,
     "total_issues": 12,
     "unused_files": [],

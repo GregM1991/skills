@@ -85,6 +85,7 @@ Route by intent before reaching for the big analysis commands. Same matrix as `f
 | prove a TypeScript symbol's exact consumers before refactoring | `fallow dead-code --type-aware --symbol-impact <file>:<export-or-class.method>` |
 | find how one module reaches another | `fallow trace --path <from> <to>`; Reports `reachable: false` instead of failing when no import path exists; type-only hops are reported, not skipped. |
 | delete an "unused" dependency | `fallow dead-code --trace-dependency <name>` |
+| migrate a dependency | `fallow trace --dependency <name> --sites`; Counts each imported name, follows one hop through project wrappers, and counts each use that it cannot resolve. |
 | commit or open a PR | `fallow audit --base <ref>` |
 | read a diff before approving it | `fallow review --base <ref> --brief`; orientation, never gates: deterministic and always exit 0, unlike the audit row |
 | prioritize refactoring | `fallow health --hotspots --targets` |
@@ -285,7 +286,7 @@ fallow dead-code --format json --quiet --save-baseline .fallow/snapshot.json
 fallow dead-code --format json --quiet --baseline .fallow/snapshot.json
 ```
 
-`--save-regression-baseline` / `--regression-baseline` / `--fail-on-regression` / `--tolerance` are count-based gates for `dead-code`, `architecture`, bare combined mode, and `flags --retirement` (a flags baseline needs a PATH; without `--retirement` the options have no effect on `flags` and it warns). `--save-baseline` / `--baseline` are identity-based (track finding identity, fail on new). `audit` rejects the global baseline flags and uses `--dead-code-baseline` / `--health-baseline` / `--dupes-baseline` instead.
+`--save-regression-baseline` / `--regression-baseline` / `--fail-on-regression` / `--tolerance` are count-based gates for `dead-code`, `architecture`, bare combined mode, and `flags --retirement` (a flags baseline needs a PATH; without `--retirement` the options have no effect on `flags` and it warns). `--save-baseline` / `--baseline` are identity-based (track finding identity, fail on new). On bare `fallow` they hold the dead-code baseline only; pass health and duplication baselines with `--health-baseline` / `--dupes-baseline`. `audit` rejects the global baseline flags and uses `--dead-code-baseline` / `--health-baseline` / `--dupes-baseline` instead.
 
 With no path, `--save-regression-baseline` updates `regression.baseline` in the discovered fallow config, or creates `.fallowrc.json` when none exists. Pass a path only when a standalone baseline file is preferred.
 
