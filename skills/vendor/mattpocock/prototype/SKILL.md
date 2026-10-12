@@ -1,13 +1,21 @@
 ---
 name: prototype
-description: Build a throwaway prototype to answer a design question. Use when the user wants to sanity-check whether a state model or logic feels right, or explore what a UI should look like.
+description: Explore UI design with Impeccable first. Build a throwaway prototype only when the user explicitly requests one to test UI, interaction, state, or logic.
 ---
 
 # Prototype
 
-A prototype is **throwaway code that answers a question**. The question decides the shape.
+Matt's working prototype is **throwaway code that answers a question**. The question decides the shape.
 
-## Pick a branch
+## Visual design first
+
+For a UI or visual design question, call the `impeccable` skill. Use its comp-led flow when image generation is available, selecting that path even when the surface defaults to code-led work; use its documented fallback otherwise. Work through the brief, design directions, comps, and the user's review.
+
+The caller's request and repo instructions set the finish. For design-only work, finish with approved comps and a confirmed brief. When complete work is required, continue through Impeccable's implementation, finish review, and documentation.
+
+Enter the throwaway code branches below only when the user explicitly requests Matt's working prototype or a runnable throwaway experiment, either directly or after Impeccable. An explicit request takes the relevant code branch directly. Reuse any approved design and brief to test the remaining question.
+
+## Pick a throwaway code branch
 
 Identify which question is being answered, using the user's prompt, the surrounding code, or by asking if the user is around:
 
@@ -16,7 +24,7 @@ Identify which question is being answered, using the user's prompt, the surround
 
 The two branches produce very different artifacts, so getting this wrong wastes the whole prototype. If the question is genuinely ambiguous and the user isn't reachable, default to whichever branch better matches the surrounding code (a backend module → logic; a page or component → UI) and state the assumption at the top of the prototype.
 
-## Rules that apply to both
+## Rules for throwaway code
 
 1. **Throwaway from day one, and clearly marked as such.** Locate the prototype code close to where it will actually be used (next to the module or page it's prototyping for) so context is obvious, but name it so a casual reader can see it's a prototype, not production. For throwaway UI routes, obey whatever routing convention the project already uses; don't invent a new top-level structure.
 2. **Trivial to run.** A UI prototype starts from one command in the project's task runner: `pnpm <name>`, `python <path>`, `bun <path>`, etc. A logic demo is a single HTML file the user double-clicks. Either way, no thinking required to start it.
