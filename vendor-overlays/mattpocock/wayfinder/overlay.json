@@ -4,6 +4,10 @@
     {
       "type": "patch",
       "patch": "use-impeccable.patch"
+    },
+    {
+      "type": "patch",
+      "patch": "use-to-spec.patch"
     }
   ]
 }

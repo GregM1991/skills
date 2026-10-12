@@ -1,12 +1,19 @@
 ---
 name: to-spec
-description: "Turn the current conversation into a spec and publish it to the project issue tracker: no interview, just synthesis of what you've already discussed."
-disable-model-invocation: true
+description: "Write and publish a specification from a settled conversation or a completed Wayfinder map. Use when a Wayfinder destination requires a spec or settled decisions need a specification."
 ---
 
-This skill takes the current conversation context and codebase understanding and produces a spec. Do NOT interview the user; just synthesize what you already know.
+This skill takes the current conversation context or resolved Wayfinder decisions and codebase understanding and produces a spec. Do NOT interview the user; synthesize the settled decisions.
 
 The issue tracker and triage label vocabulary should have been provided to you. If not, tell the user to run `/setup-matt-pocock-skills`.
+
+## Wayfinder input
+
+When the source is a Wayfinder map, complete these steps before the Process below:
+
+1. Read the full map, query all its child tickets, and read every ticket linked from **Decisions so far** and **Out of scope**. Read each child or linked ticket's full body, resolution comments or Answer section, and linked decision assets. The map's summaries alone are not sufficient source material.
+2. Confirm that every on-route decision ticket is resolved and **Not yet specified** contains no unresolved in-scope fog. A final specification handoff ticket may remain open until this skill publishes the specification. If decisions remain open or conflict, report them and stop before drafting.
+3. Preserve the settled decisions and scope in the specification. Cite the map and its source tickets under **Further Notes** so readers can recover the decision detail.
 
 ## Process
 
