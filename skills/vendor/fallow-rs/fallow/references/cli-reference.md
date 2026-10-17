@@ -526,7 +526,7 @@ Human output groups paths under "Shared with your team (commit these)" and "Loca
 {
   "kind": "agent-install",
   "schema_version": 1,
-  "fallow_version": "3.33.1",
+  "fallow_version": "3.34.0",
   "root": "/abs/path",
   "mode": "install",
   "dry_run": false,
@@ -737,7 +737,7 @@ fallow health --format json --quiet --trend
 {
   "kind": "health",
   "schema_version": 7,
-  "version": "3.33.1",
+  "version": "3.34.0",
   "elapsed_ms": 32,
   "summary": {
     "files_analyzed": 482,
@@ -1137,6 +1137,8 @@ Common global flags for this command: [`--format`](#global-flags), [`--quiet`](#
 
 With `--gate new-only`, inherited error-severity findings can be present in the JSON output while the verdict remains `pass`; check the `attribution` object and per-finding `introduced` booleans.
 
+A merge of the default branch brings in code that the default branch already has. When the base is auto-detected, audit also compares with the merged default-branch commits: `MERGE_HEAD` of a merge in progress, and the merge-base with the default branch after a merge commit. A finding that one of these commits already has is inherited, so the gate does not block the merge commit or the push after it. Code from a merged branch that the default branch does not contain stays introduced. An explicit `--base` or `FALLOW_AUDIT_BASE` turns this off.
+
 A complexity finding matches its base finding by file path and function name. The line and the exceeded category do not affect the match, and a renamed file keeps its match. A complexity finding is introduced in these cases:
 
 - No base finding matches it.
@@ -1198,7 +1200,7 @@ fallow audit \
 {
   "kind": "audit",
   "schema_version": 7,
-  "version": "3.33.1",
+  "version": "3.34.0",
   "command": "audit",
   "verdict": "fail",
   "changed_files_count": 12,
@@ -1286,7 +1288,7 @@ fallow flags --format json --quiet --workspace my-package
 ```json
 {
   "schema_version": 7,
-  "version": "3.33.1",
+  "version": "3.34.0",
   "elapsed_ms": 116,
   "feature_flags": [],
   "total_flags": 0
@@ -1387,7 +1389,7 @@ fallow security --gate newly-reachable --changed-since origin/main
 {
   "kind": "security",
   "schema_version": "4",
-  "version": "3.33.1",
+  "version": "3.34.0",
   "elapsed_ms": 42,
   "config": {
     "rules": {
@@ -1416,7 +1418,7 @@ fallow security --gate newly-reachable --changed-since origin/main
 {
   "kind": "security",
   "schema_version": "4",
-  "version": "3.33.1",
+  "version": "3.34.0",
   "elapsed_ms": 42,
   "config": {
     "rules": {
@@ -2231,7 +2233,7 @@ The HTTP layer mirrors the bash `gh_api_retry` / `curl_retry` helpers: `FALLOW_A
 {
   "kind": "dead-code",
   "schema_version": 7,
-  "version": "3.33.1",
+  "version": "3.34.0",
   "elapsed_ms": 45,
   "total_issues": 12,
   "entry_points": {
@@ -2391,7 +2393,7 @@ When `--baseline` is used in combined output, the JSON includes a `baseline_delt
 {
   "kind": "dupes",
   "schema_version": 7,
-  "version": "3.33.1",
+  "version": "3.34.0",
   "elapsed_ms": 82,
   "total_clones": 15,
   "total_lines_duplicated": 230,
@@ -2435,11 +2437,11 @@ When running `fallow` with no subcommand (all analyses), the JSON output combine
 {
   "kind": "combined",
   "schema_version": 7,
-  "version": "3.33.1",
+  "version": "3.34.0",
   "elapsed_ms": 159,
   "check": {
     "schema_version": 7,
-    "version": "3.33.1",
+    "version": "3.34.0",
     "elapsed_ms": 45,
     "total_issues": 12,
     "unused_files": [],
@@ -2531,7 +2533,7 @@ Config files are searched in priority order: `.fallowrc.json` > `.fallowrc.jsonc
   // Per-path rule overrides
   "overrides": [
     {
-      "files": ["*.test.ts", "*.spec.ts"],
+      "files": ["**/*.test.ts", "**/*.spec.ts"],
       "rules": { "unused-exports": "off" }
     }
   ],
@@ -2636,7 +2638,7 @@ ignoreDefaults = true
 ignoredClones = ["dup:6f12ab34:2"]
 
 [[overrides]]
-files = ["*.test.ts"]
+files = ["**/*.test.ts"]
 [overrides.rules]
 unused-exports = "off"
 
@@ -2648,7 +2650,9 @@ preset = "bulletproof"
 
 - `ignoreExportsUsedInFile`: knip-compatible; suppress unused-export findings when the exported symbol is referenced inside the file that declares it. Boolean (`true` covers all kinds) or `{ "type": true, "interface": true }` object form for knip parity. Fallow groups type aliases and interfaces under the same `unused-types` issue, so both type-kind fields behave identically. References inside the export specifier itself (`export { foo }`, `export default foo`) do not count as same-file uses; those exports are still reported when no other in-file expression references the binding
 - `publicPackages`: workspace packages that are public libraries; exported API surface from these packages is not flagged as unused
-- `dynamicallyLoaded`: glob patterns for files loaded at runtime (plugin dirs, locale files); treated as always-used
+- `entry`: glob patterns for files that are manual entry points. A single `*` stays within one path segment; use `**` to match across directories
+- `dynamicallyLoaded`: glob patterns for files loaded at runtime (plugin dirs, locale files); treated as always-used. A single `*` stays within one path segment; use `**` to match across directories
+- Path globs in other fields (`ignorePatterns`, `ignoreFindings`, `overrides[].files`, `ignoreExports[].file`, `duplicates.ignore`, `health.ignore`, boundary zones, rule-pack and `framework[]` globs) use the same rule: a single `*` stays within one path segment. Write `**/*.test.ts` to match test files at any depth
 - `cache.dir`: override the persistent extraction cache directory. `FALLOW_CACHE_DIR` wins over this config field, and `--no-cache` disables caching entirely
 - `cache.maxSizeMb`: cap the serialized extraction cache size in megabytes. `FALLOW_CACHE_MAX_SIZE` wins over this config field
 - `workspaces.changedSince`: map exact workspace roots (as `fallow list --workspaces` prints them) to Git refs. `check`, `dead-code` and `dupes` then report the findings of a mapped package only for files changed since its ref; unlisted packages and root files stay in full scope. A global `--changed-since` replaces the map for one run; `--no-package-baselines` or `FALLOW_PACKAGE_BASELINES=false` turns it off. A key that names no workspace, or a ref Git cannot resolve, leaves every package in full scope with a warning and `request_outcomes["package-baselines"]` as `not-applied`. Save a whole-project baseline with `--no-package-baselines`.
