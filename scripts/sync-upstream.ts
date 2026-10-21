@@ -30,6 +30,7 @@ export type SourceConfig = {
 	categoryRoot?: string;
 	includeCategories?: string[];
 	excludeCategories?: string[];
+	excludeSkills?: string[];
 };
 export type SourcesFile = {
 	$schemaVersion: number;
@@ -167,6 +168,7 @@ async function buildCategoryEntries(source: SourceConfig, cloneDir: string): Pro
 		throw new Error(`Source "${source.id}" has mode "categories" but is missing categoryRoot or includeCategories.`);
 	}
 	const exclude = new Set(source.excludeCategories ?? []);
+	const excludeSkills = new Set(source.excludeSkills ?? []);
 	const categoryRootAbs = path.join(cloneDir, source.categoryRoot);
 	const entries: SkillEntry[] = [];
 	for (const category of source.includeCategories) {
@@ -176,6 +178,7 @@ async function buildCategoryEntries(source: SourceConfig, cloneDir: string): Pro
 			throw new Error(`Source "${source.id}" lists category "${category}" but it no longer exists upstream at ${source.categoryRoot}/${category}.`);
 		}
 		for (const skillName of await directoryNames(categoryAbs)) {
+			if (excludeSkills.has(skillName)) continue;
 			entries.push({
 				name: skillName,
 				owner: vendorOwnerDir(source.owner),

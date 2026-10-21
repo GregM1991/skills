@@ -351,6 +351,9 @@
       ],
       "excludeCategories": [
         "deprecated"
+      ],
+      "excludeSkills": [
+        "pr"
       ]
     }
   ]

@@ -1,0 +1,8 @@
+diff --git a/SKILL.md b/SKILL.md
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -31,3 +31,3 @@
+ 
+-   When the work goes up as a pull request, **`/pr`** shapes the body: the smallest visual that shows the change, before/after evidence that it works, and a one-way or two-way door call. It's model-invoked, so the agent reaches for it whenever it writes a PR.
++   When the work goes up as a pull request, use **`/write-pr`** to write the body in Greg's preferred style. Read its SKILL.md and follow the repository's PR instructions.
+ 

@@ -35,7 +35,7 @@ first skill found, so duplicates were being silently shadowed.
    straight to `main`. No review gate, no PR.
 5. `gm-pi-environment` stops shipping general-purpose skills and drops `./skills` from
    `pi.skills`. Pi receives skills like every other harness, through `~/.agents/skills`.
-6. Matt subset: all skills under `engineering`, `in-progress`, `misc`, and `productivity`, excluding `deprecated`. The current count is 36 and can change on future syncs.
+6. Matt subset: all skills under `engineering`, `in-progress`, `misc`, and `productivity`, excluding `deprecated` and the skill names in that source's `excludeSkills` list. The count can change on future syncs.
 7. Direct modifications under `skills/vendor/` are overwritten by the next sync. Persistent
    downstream changes live under `vendor-overlays/<owner>/<skill>/` and the sync composes them
    onto a fresh upstream staging tree before generating the vendored skill.
@@ -112,6 +112,14 @@ npx skills add GregM1991/skills --all -g
 # ongoing, on any machine
 npx skills update
 ```
+
+### Excluding a skill
+
+Category sources support an `excludeSkills` list in `sources.json`. Entries are exact skill directory names, independent of category. The sync omits them and removes their existing vendored directories. This keeps a later upstream sync from restoring a removed skill.
+
+Matt's `pr` skill is excluded. Use the authored `write-pr` skill for PR bodies. The `ask-matt` overlay directs PR writing to it.
+
+Repository exclusion does not uninstall existing global copies. On each machine, run `bunx --bun skills remove pr --global --yes` to remove the installed skill, its agent links and its lock entry. The `--bun` flag avoids dependence on the machine's Node version. Offline machines need the same removal when they reconnect. Publish the repository change before installing all skills again from GitHub.
 
 ## Contents of the new repo: 64 skills at the current upstream baseline
 
