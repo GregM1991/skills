@@ -26,9 +26,9 @@ authorization:
 
 ```bash
 python3 "$SKILL_DIR/scripts/podcraft_api.py" create generated \
-  --series <series-slug> \
-  --topic "<topic>" \
-  --summary-file <absolute-summary-path> \
+  --series "$SERIES_SLUG" \
+  --topic "$TOPIC" \
+  --summary-file "$SUMMARY_FILE" \
   --length medium \
   --dry-run
 ```

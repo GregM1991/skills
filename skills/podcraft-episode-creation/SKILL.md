@@ -1,81 +1,76 @@
 ---
 name: podcraft-episode-creation
-description: Create and verify a Podcraft episode through the running service.
+description: Create or import Podcraft episodes and verify playback and feeds.
 disable-model-invocation: true
 ---
 
 # Podcraft episode creation
 
-Produce one ready, playable, feed-visible episode through the Podcraft API. The
-caller needs Python 3 and network access to the service. A Podcraft checkout is
-not part of this workflow.
+Deliver one ready, playable episode from a topic, script, or existing recording.
+The API workflow needs Python 3 and tailnet access. Audio uploads also use curl
+and ffprobe. The local import CLI needs the Podcraft checkout.
 
-## 1. Connect
+## 1. Select the branch
 
-Set `SKILL_DIR` to this skill's absolute directory. The bundled client uses
-`PODCRAFT_API_BASE_URL`, falling back to the current server's Tailscale DNS name.
-Read [references/api.md](references/api.md), then run its readiness and series
-commands.
+- **Generated:** Podcraft researches and writes from a topic and summary. Read
+  [references/generated.md](references/generated.md).
+- **BYOS:** Podcraft renders the supplied script with text-to-speech. Read
+  [references/byos.md](references/byos.md).
+- **Import audio:** Podcraft preserves an existing MP3 or M4A AAC recording. Read
+  [references/imports.md](references/imports.md).
 
-Podcraft currently has no application-layer API authentication. Network policy
-is its only access control. Use a Tailscale address and treat anyone who can
-reach TCP port 5200 as having production access. If the caller cannot reach the
-configured URL, report the failed check and stop.
+**Complete when:** the branch and source are identified, and its reference is read.
 
-**Complete when:** readiness passes and the requested series slug appears in the
-API result.
+## 2. Preflight
 
-## 2. Frame
+Set `SKILL_DIR` to this skill's absolute directory. Read
+[references/api.md](references/api.md) for connection and branch readiness checks.
+Resolve the target series and run the selected branch's preflight.
 
-Choose one content-authority branch:
+Generated and BYOS commands have a client dry run. The local import CLI validates
+with `--dry-run`. Multipart API imports use the read-only preflight in their
+reference; uploading creates an episode.
 
-- **Generated:** Podcraft researches and writes from a topic and supplied
-  summary. Read [references/generated.md](references/generated.md).
-- **BYOS:** the supplied script is authoritative; Podcraft renders and delivers
-  it. Read [references/byos.md](references/byos.md).
-
-Resolve every required input and use branch defaults for optional inputs the
-user did not specify.
-
-**Complete when:** one branch is selected and its create command has concrete
-arguments.
+**Complete when:** required dependencies pass, the series exists, and the source,
+hash, metadata, and concrete submission command are recorded. Name any validation
+that only the import API can perform during submission.
 
 ## 3. Authorize
 
-Run the branch command with `--dry-run`. This validates local limits, resolves
-the series slug and voice, and prints content hashes without creating an
-episode.
+Use the user's existing authorization for the resolved submission. If it does
+not cover that submission, present the branch, series, title or topic, source
+path and hash, and branch options for confirmation. Voice applies to Generated
+and BYOS. Source ID and episode number apply to imports.
 
-Episode creation is a production side effect. If the user's request has not
-already authorized the exact plan, present its mode, series, title or topic,
-source path and hash, voice, and optional overrides for confirmation.
+**Complete when:** preflight passes and the resolved submission is authorized.
 
-**Complete when:** the dry run passes and the exact submission is authorized.
+## 4. Submit once
 
-## 4. Create once
+Run the selected branch's submission command once. Keep its response, diagnostics,
+exit status, and episode ID in private evidence. Generated and BYOS submissions
+start background generation. A successful import returns a ready episode.
 
-Run the authorized command once with `--dry-run` removed. Save its full stdout,
-stderr, exit status, and returned episode ID. The API starts generation in the
-background.
+If the response is lost or ambiguous, reconcile against existing episodes before
+another submission. For repeat imports, follow the import reference's rules for
+source IDs and preserve the original source and metadata.
 
-The client never retries creation. If the response is lost or the result is
-ambiguous, preserve the evidence and reconcile against recent episodes before
-considering another create request.
-
-**Complete when:** one request returns an episode ID, or one failed attempt has
+**Complete when:** one submission returns an episode ID, or a failed attempt has
 preserved evidence.
 
-## 5. Wait and verify
+## 5. Verify
 
-When creation returns an ID, read
-[references/verification.md](references/verification.md). Wait for a terminal
-status, then apply every production and delivery gate. Keep listening quality
-separate from mechanical delivery.
+Read [references/verification.md](references/verification.md). Wait for generation
+only for Generated and BYOS. Verify an import's ready state and original audio.
+Apply every delivery gate for the selected branch.
 
-**Complete when:** every mechanical gate has explicit pass/fail evidence and
-remaining human checks are named.
+When the user wants separate podcast subscriptions or AntennaPod delivery, also
+read [references/subscriptions.md](references/subscriptions.md).
+
+**Complete when:** every required mechanical gate has pass/fail evidence, requested
+subscriptions are reachable, and remaining human checks are named.
 
 ## Final report
 
-Return mode, series, title or topic, episode ID, duration, URLs, gate results,
-failure evidence, and human review still required.
+Return the branch, series, title or topic, episode ID, duration, delivery links,
+gate results, failure evidence, and human review still required. For a collection,
+report verified imports against the expected released recordings and bonus items.

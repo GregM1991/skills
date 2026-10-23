@@ -22,9 +22,9 @@ authorization:
 
 ```bash
 python3 "$SKILL_DIR/scripts/podcraft_api.py" create byos \
-  --series <series-slug> \
-  --title "<title>" \
-  --script-file <absolute-script-path> \
+  --series "$SERIES_SLUG" \
+  --title "$TITLE" \
+  --script-file "$SCRIPT_FILE" \
   --dry-run
 ```
 
