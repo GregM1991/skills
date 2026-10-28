@@ -355,6 +355,31 @@
       "excludeSkills": [
         "pr"
       ]
+    },
+    {
+      "id": "poteto-noodle",
+      "description": "One skill: skill-creator.",
+      "owner": "poteto",
+      "repoName": "noodle",
+      "url": "https://github.com/poteto/noodle",
+      "ref": "HEAD",
+      "licensePaths": [
+        "LICENSE"
+      ],
+      "lastSyncedAt": "2026-10-28T03:17:52.006Z",
+      "resolvedCommit": "82d2921c52370f23f29086de81ccfb600939c037",
+      "mode": "explicit",
+      "skills": [
+        {
+          "name": "skill-creator",
+          "paths": [
+            {
+              "from": "skills/skill-creator",
+              "to": "."
+            }
+          ]
+        }
+      ]
     }
   ]
 }
