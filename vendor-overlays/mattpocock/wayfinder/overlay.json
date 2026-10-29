@@ -8,6 +8,10 @@
     {
       "type": "patch",
       "patch": "use-to-spec.patch"
+    },
+    {
+      "type": "patch",
+      "patch": "open-with-eli5-overview.patch"
     }
   ]
 }
