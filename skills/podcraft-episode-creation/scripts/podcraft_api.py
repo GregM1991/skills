@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -18,6 +19,8 @@ from typing import Any
 DEFAULT_BASE_URL = "http://gm-home-server.geep-clownfish.ts.net:5200"
 ACTIVE_STATUSES = {"pending", "generating_script", "generating_audio", "processing"}
 TERMINAL_STATUSES = {"ready", "failed"}
+SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+RESERVED_SLUGS = {"new", "edit", "api", "settings", "episodes"}
 
 
 class ClientError(RuntimeError):
@@ -196,6 +199,17 @@ def bounded(value: str, label: str, maximum: int) -> str:
     return trimmed
 
 
+def series_slug(value: str) -> str:
+    slug = bounded(value, "slug", 100)
+    if not SLUG_PATTERN.fullmatch(slug):
+        raise ClientError(
+            f'Slug "{slug}" must be lowercase alphanumeric with hyphens, such as "my-series"'
+        )
+    if slug in RESERVED_SLUGS:
+        raise ClientError(f'Slug "{slug}" is reserved by Podcraft')
+    return slug
+
+
 def source_summary(path: Path, text: str) -> dict[str, Any]:
     return {
         "path": str(path),
@@ -289,6 +303,65 @@ def cmd_health(client: PodcraftClient, args: argparse.Namespace) -> int:
 
 def cmd_series(client: PodcraftClient, _args: argparse.Namespace) -> int:
     print_json(client.series())
+    return 0
+
+
+def build_series_plan(
+    client: PodcraftClient, args: argparse.Namespace
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "title": bounded(args.title, "title", 200),
+        "slug": series_slug(args.slug),
+        "voice": bounded(args.voice, "voice", 200),
+        "category": bounded(args.category, "category", 200),
+        "author": bounded(args.author, "author", 200),
+    }
+    if args.description is not None:
+        payload["description"] = bounded(args.description, "description", 2000)
+    if args.persona_id is not None:
+        payload["personaId"] = bounded(args.persona_id, "persona ID", 200)
+    if args.image_url is not None:
+        payload["imageUrl"] = args.image_url.strip()
+    if args.default:
+        payload["isDefault"] = True
+
+    validate_remote_options(
+        client,
+        voice=payload["voice"],
+        persona_id=payload.get("personaId"),
+        image_url=payload.get("imageUrl"),
+    )
+
+    existing = client.series()
+    match = next(
+        (item for item in existing if item.get("slug") == payload["slug"]), None
+    )
+    if match is not None:
+        raise ClientError(
+            f'Series "{payload["slug"]}" already exists with ID {match.get("id")}. '
+            "Use the existing series or choose another slug."
+        )
+
+    plan: dict[str, Any] = {"procedure": "series.create", "payload": payload}
+    if args.default:
+        current = next((item for item in existing if item.get("isDefault")), None)
+        plan["replacesDefault"] = (
+            {key: current.get(key) for key in ("id", "slug", "title")}
+            if current
+            else None
+        )
+    return plan
+
+
+def cmd_series_create(client: PodcraftClient, args: argparse.Namespace) -> int:
+    plan = build_series_plan(client, args)
+    if args.dry_run:
+        print_json(plan)
+        return 0
+    result = client.trpc("series.create", plan["payload"], mutation=True)
+    if not isinstance(result, dict) or not result.get("id"):
+        raise ClientError("series.create returned no series ID; do not retry blindly")
+    print_json(result)
     return 0
 
 
@@ -472,8 +545,31 @@ def parser() -> argparse.ArgumentParser:
     health.add_argument("--ready", action="store_true")
     health.set_defaults(handler=cmd_health)
 
-    series = commands.add_parser("series", help="List existing series")
+    series = commands.add_parser(
+        "series", help="List existing series, or create one"
+    )
     series.set_defaults(handler=cmd_series)
+    series_commands = series.add_subparsers(dest="series_command")
+
+    series_list = series_commands.add_parser("list", help="List existing series")
+    series_list.set_defaults(handler=cmd_series)
+
+    series_create = series_commands.add_parser("create", help="Create one series")
+    series_create.add_argument("--title", required=True)
+    series_create.add_argument("--slug", required=True)
+    series_create.add_argument("--description")
+    series_create.add_argument("--voice", default="af_heart")
+    series_create.add_argument("--persona-id")
+    series_create.add_argument("--category", default="Technology")
+    series_create.add_argument("--author", default="AI Podcast")
+    series_create.add_argument("--image-url")
+    series_create.add_argument(
+        "--default",
+        action="store_true",
+        help="Make this the default series; the current default loses that status",
+    )
+    series_create.add_argument("--dry-run", action="store_true")
+    series_create.set_defaults(handler=cmd_series_create)
 
     voices = commands.add_parser("voices", help="List supported voices")
     voices.set_defaults(handler=cmd_voices)

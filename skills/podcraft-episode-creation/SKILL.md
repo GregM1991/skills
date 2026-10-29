@@ -25,13 +25,15 @@ and ffprobe. The local import CLI needs the Podcraft checkout.
 
 Set `SKILL_DIR` to this skill's absolute directory. Read
 [references/api.md](references/api.md) for connection and branch readiness checks.
-Resolve the target series and run the selected branch's preflight.
+Resolve the target series and run the selected branch's preflight. When the
+series is missing, plan its creation with the dry run in the API reference.
 
 Generated and BYOS commands have a client dry run. The local import CLI validates
 with `--dry-run`. Multipart API imports use the read-only preflight in their
 reference; uploading creates an episode.
 
-**Complete when:** required dependencies pass, the series exists, and the source,
+**Complete when:** required dependencies pass, the series exists or its creation
+dry run passes, and the source,
 hash, metadata, and concrete submission command are recorded. Name any validation
 that only the import API can perform during submission.
 
@@ -40,7 +42,9 @@ that only the import API can perform during submission.
 Use the user's existing authorization for the resolved submission. If it does
 not cover that submission, present the branch, series, title or topic, source
 path and hash, and branch options for confirmation. Voice applies to Generated
-and BYOS. Source ID and episode number apply to imports.
+and BYOS. Source ID and episode number apply to imports. A new series is a
+separate write: present its dry-run payload, and create it only after the user
+authorizes that series. Then resolve it again before the episode submission.
 
 **Complete when:** preflight passes and the resolved submission is authorized.
 

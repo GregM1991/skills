@@ -1,7 +1,7 @@
 # Podcraft API client
 
 The bundled [client](../scripts/podcraft_api.py) handles Podcraft's tRPC queries,
-Generated/BYOS creation, and basic delivery verification. Audio imports use the
+series creation, Generated/BYOS creation, and basic delivery verification. Audio imports use the
 multipart endpoint or local CLI described in [imports.md](imports.md).
 
 ## Connection
@@ -30,6 +30,32 @@ python3 "$SKILL_DIR/scripts/podcraft_api.py" series
 
 `series` supplies each existing slug and ID. The bundled creation commands and
 local import CLI take a slug; the multipart import endpoint takes the series ID.
+
+## Create a missing series
+
+Creating a series is a write. Run the dry run, present its payload, and submit
+once only after the user authorizes that series:
+
+```bash
+python3 "$SKILL_DIR/scripts/podcraft_api.py" series create \
+  --title "$SERIES_TITLE" \
+  --slug "$SERIES_SLUG" \
+  --description "$SERIES_DESCRIPTION" \
+  --dry-run
+```
+
+Optional flags are `--voice` (default `af_heart`), `--persona-id`, `--category`
+(default `Technology`), `--author` (default `AI Podcast`), `--image-url`, and
+`--default`. The slug is permanent and becomes the feed path
+`/api/feed/<slug>`. It is 1 to 100 lowercase letters, digits, and single
+hyphens; `new`, `edit`, `api`, `settings`, and `episodes` are reserved. The title
+is at most 200 characters and the description at most 2,000.
+
+The dry run and the submission both validate voice and persona against the
+service and fail when the slug already exists. Use the existing series in that
+case. With `--default`, the plan names the series in `replacesDefault`, which
+loses default status. Success prints the new series object with its `id`. If the
+response is lost, run `series` and look for the slug before another attempt.
 
 For Generated and BYOS, require full readiness and resolve the voice:
 
