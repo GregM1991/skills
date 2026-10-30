@@ -12,6 +12,10 @@
     {
       "type": "patch",
       "patch": "open-with-eli5-overview.patch"
+    },
+    {
+      "type": "patch",
+      "patch": "check-module-depth.patch"
     }
   ]
 }
