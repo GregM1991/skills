@@ -14,7 +14,7 @@ bun "$ISSUE_READER_SKILL/scripts/issue-read.ts" --snapshot /path/to/snapshot.jso
 
 Body and individual comment offsets count characters. Comment, child, and blocker index offsets count entries. Use the returned `nextOffset` for continuation. `nextOffset: null` means that section is complete. A comment preview is an index entry. Read the full relevant comment through `--comment` before relying on it.
 
-Full validated titles, labels, bodies, comments, and relationship metadata remain in the snapshot. If a title or label is truncated, use a targeted read of that snapshot field. Keep snapshot contents in private temporary storage and print only the fields needed for the task. The reader creates each snapshot directory with mode `0700` and its file with mode `0600`.
+Full validated titles, labels, bodies, comments, and relationship metadata remain in the snapshot. If a title or label is truncated, use a targeted read of that snapshot field. Keep snapshot contents in private temporary storage and print only the fields needed for the task. The reader creates each snapshot directory with mode `0700` and its file with mode `0600`. Each fresh read removes other `issue-*` directories in `github-issue-reader` under the system temporary directory when they are more than 7 days old. Reads from a saved snapshot remove nothing. Keep evidence you need for longer than 7 days outside that directory.
 
 ## Read native relationships
 
@@ -39,4 +39,4 @@ Older snapshots still expose body and comments but print `relationships.availabl
 
 ## Maintain the helper
 
-The skill owns its runtime dependency and lockfile. Run `bun install --cwd "$ISSUE_READER_SKILL" --frozen-lockfile`, then `bun run --cwd "$ISSUE_READER_SKILL" test` after changing the reader. Tests exercise the CLI against a fake `gh` executable, including pagination, private snapshots, repository selection, and lookup failures.
+The skill owns its runtime dependency and lockfile. Run `bun install --cwd "$ISSUE_READER_SKILL" --frozen-lockfile`, then `bun run --cwd "$ISSUE_READER_SKILL" test` after changing the reader. Tests exercise the CLI against a fake `gh` executable, including pagination, private snapshots, old snapshot cleanup, repository selection, and lookup failures.

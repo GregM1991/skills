@@ -18,6 +18,6 @@ Use the bundled reader for issue content and native relationships. It saves comp
    ```
 
 3. Inspect the returned repository, issue number, fetch time, body excerpt, comment index, and relationship counts. Confirm that they match the requested ticket. Read relevant omitted content through the printed snapshot path before deciding scope or acceptance. Follow `nextOffset` until each relevant section is complete. For commands, offsets, and failures, read [saved content and native relationships](references/reading.md).
-4. Fetch again when a decision needs current issue or blocker state. Report the issue URL and findings supported by the content you read. Identify any unread relevant content or failed lookup. Remove the printed snapshot's containing directory when the task no longer needs that evidence.
+4. Fetch again when a decision needs current issue or blocker state. Report the issue URL and findings supported by the content you read. Identify any unread relevant content or failed lookup. Remove the printed snapshot's containing directory when the task no longer needs that evidence. Each fresh read also removes `issue-*` snapshot directories older than 7 days.
 
 The reader only performs GitHub reads. Follow the user's request and repository workflow for any later issue change or implementation.

@@ -1,5 +1,14 @@
 import { spawn } from "node:child_process";
-import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  stat,
+  utimes,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -281,6 +290,43 @@ describe("bounded issue reading", () => {
       "--slurp",
     ]);
     expect(result.stdout.length).toBeLessThan(11000);
+  });
+
+  it("removes snapshot directories older than seven days on a fresh read only", async () => {
+    const source = await fixture();
+    const { env } = await fakeGitHub(source);
+    const temp = path.join(source.directory, "tmp");
+    const root = path.join(temp, "github-issue-reader");
+    const day = 24 * 60 * 60 * 1000;
+    const old = new Date(Date.now() - 8 * day);
+    const recent = new Date(Date.now() - 6 * day);
+    for (const [name, date] of [
+      ["issue-old", old],
+      ["issue-recent", recent],
+      ["other-old", old],
+    ] as const) {
+      await mkdir(path.join(root, name), { recursive: true });
+      await writeFile(path.join(root, name, "snapshot.json"), "{}");
+      await utimes(path.join(root, name), date, date);
+    }
+    const isolated = { ...env, TMPDIR: temp };
+    const reread = await run(["--snapshot", source.file], isolated);
+    expect(reread.code).toBe(0);
+    expect((await stat(path.join(root, "issue-old"))).isDirectory()).toBe(true);
+    const result = await run(["12"], isolated);
+    expect(result.code).toBe(0);
+    const output = z
+      .object({ snapshot: z.string() })
+      .parse(JSON.parse(result.stdout));
+    expect(path.dirname(path.dirname(output.snapshot))).toBe(root);
+    expect((await readdir(root)).sort()).toEqual(
+      [
+        "issue-recent",
+        "other-old",
+        path.basename(path.dirname(output.snapshot)),
+      ].sort(),
+    );
+    expect((await stat(output.snapshot)).isFile()).toBe(true);
   });
 
   it("saves complete native relationships and pages child and blocker output without more GitHub reads", async () => {

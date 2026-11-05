@@ -1,4 +1,13 @@
-import { chmod, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { parseArgs } from "node:util";
@@ -7,6 +16,7 @@ import { z } from "zod";
 
 const INDEX_PAGE_SIZE = 20;
 const TITLE_LIMIT = 250;
+const SNAPSHOT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const relatedIssueSchema = z.object({
   number: z.number().int().positive(),
   title: z.string(),
@@ -120,6 +130,24 @@ async function fetchSnapshot(
       blockers: issuePages.parse(blockers).flat(),
     },
   });
+}
+
+async function pruneOldSnapshots(root: string, keep: string) {
+  const cutoff = Date.now() - SNAPSHOT_MAX_AGE_MS;
+  const entries = await readdir(root, { withFileTypes: true }).catch(() => []);
+  await Promise.all(
+    entries.map(async (entry) => {
+      if (!entry.isDirectory() || !entry.name.startsWith("issue-")) return;
+      const directory = path.join(root, entry.name);
+      if (directory === keep) return;
+      try {
+        if ((await stat(directory)).mtimeMs < cutoff)
+          await rm(directory, { recursive: true, force: true });
+      } catch {
+        // Another read may have removed it already.
+      }
+    }),
+  );
 }
 
 function excerpt(text: string, offset: number, limit: number) {
@@ -292,6 +320,7 @@ async function main() {
     await chmod(directory, 0o700);
     file = path.join(directory, "snapshot.json");
     await writeFile(file, JSON.stringify(snapshot, null, 2), { mode: 0o600 });
+    await pruneOldSnapshots(root, directory);
   }
   console.log(
     JSON.stringify(
