@@ -380,6 +380,31 @@
           ]
         }
       ]
+    },
+    {
+      "id": "scratchpad-sh-skills",
+      "description": "One skill: outline-notes, for hierarchical notes from lectures, chapters, documents, and talks.",
+      "owner": "scratchpad-sh",
+      "repoName": "skills",
+      "url": "https://github.com/scratchpad-sh/skills",
+      "ref": "HEAD",
+      "licensePaths": [
+        "LICENSE"
+      ],
+      "lastSyncedAt": "2026-11-09T22:11:07.259Z",
+      "resolvedCommit": "0d6d8317efaff44ff51508ca6d39eb2324e3f414",
+      "mode": "explicit",
+      "skills": [
+        {
+          "name": "outline-notes",
+          "paths": [
+            {
+              "from": "plugins/note-taking-methods/skills/outline-notes",
+              "to": "."
+            }
+          ]
+        }
+      ]
     }
   ]
 }
