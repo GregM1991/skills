@@ -12,8 +12,8 @@ Greg gives a Wayfinder map. You work its whole frontier in this session. On each
 
 - Load `wayfinder` and follow "Work through the map", with the changes in this skill. This skill wins where the two disagree.
 - Work all frontier tickets in one session. This replaces the Wayfinder limit of one ticket per session.
-- Run every subagent in fast mode, including fact finders. In T3 Code, start each one with `delegate_task`, because the native `Agent` tool cannot set fast mode. Call `orchestrator_capabilities` once first and pick the latest Opus model. If the host has no fast mode, use the `Agent` tool and tell Greg that fast mode was not available.
-- Find facts yourself, or with a fast fact finder. A stand-in decides. It does not do your legwork.
+- In T3 Code, start each stand-in with `delegate_task`. Call `orchestrator_capabilities` once first and pick the latest Opus model.
+- Find facts yourself, or with a fact finder. A stand-in decides. It does not do your legwork.
 - Skip the ELI5 overview. The final report replaces it.
 
 ## Steps
@@ -26,7 +26,7 @@ Greg gives a Wayfinder map. You work its whole frontier in this session. On each
 
    Claim all grilling and research tickets before you start work on any of them.
 3. **Prepare round 1.** For each grilling ticket, load `grilling` and `domain-modeling`. Read the ticket, the resolution comments of closed tickets on the map, and the code the question reaches. Write round 1 in the `grilling` format. Give a recommendation for each question. Put the facts you found above the questions, with file and line references, so the stand-in can check them.
-4. **Start the stand-ins.** Start one stand-in for each grilling ticket. Use these target options: `effort: "xhigh"`, `fastMode: true`. Start stand-ins for independent tickets in parallel. Send the brief below, then the ticket context and round 1.
+4. **Start the stand-ins.** Start one stand-in for each grilling ticket. Use the target option `effort: "xhigh"`. Start stand-ins for independent tickets in parallel. Send the brief below, then the ticket context and round 1.
 5. **Grill to agreement.** Read each reply. When a fact correction changes a decision, check it in the code. Accept good changes, push back on weak ones, and ask any new question that the reply opens. Send the next round to the same child thread with `t3_thread_send`, so the stand-in keeps its context. **Agreement** means that each question has an answer that you and the stand-in both accept, and no new question is open. Stop rounds only at agreement.
 6. **Reconcile across tickets.** Two stand-ins can decide the same value in different ways, for example a retry backoff. When they do, the decision on the ticket that closed first wins, and the later resolution refers to it. When a stand-in amends a closed decision, put a short pointer comment on that closed ticket. When a stand-in finds an item that belongs to another open ticket, post that item on the other ticket as a comment.
 7. **Record each resolution.** Post the resolution comment, then close the ticket. In each comment, say that a stand-in for Greg reviewed the decision, as Greg asked. Write all tracker text in Simplified Technical English with glossary terms.
