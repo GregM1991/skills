@@ -138,7 +138,7 @@ ultimatum to serbia, mobilizations"
 
 ## Saving the note
 
-If a notes app is connected (for example the Scratchpad connector, or any notes
+If a notes app is connected (for example through a connector, or any notes
 tool you can call), offer to save the result there as a new note with a clear,
 searchable title, or to add it to an existing note the person names. Otherwise,
 give the whole note as one Markdown block that pastes cleanly into any notes
