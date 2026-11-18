@@ -1,0 +1,6 @@
+interface:
+  display_name: "Wayfinder scripts"
+  short_description: "Tracker scripts for Wayfinder maps and tickets"
+  default_prompt: "Use $wayfinder-scripts to run the tracker step that the calling skill names."
+policy:
+  allow_implicit_invocation: true
