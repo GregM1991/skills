@@ -5,6 +5,11 @@
       "type": "append-if-missing",
       "target": "SKILL.md",
       "content": "shared-owner-coordination.md"
+    },
+    {
+      "type": "append-if-missing",
+      "target": "SKILL.md",
+      "content": "impl-tick.md"
     }
   ]
 }

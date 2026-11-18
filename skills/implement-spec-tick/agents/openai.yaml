@@ -1,0 +1,5 @@
+interface:
+  display_name: "Implement Spec Tick"
+  short_description: "Ticket frontier, worktree and merge script for implement-spec"
+policy:
+  allow_implicit_invocation: false
