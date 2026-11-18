@@ -1,158 +1,81 @@
 ---
 name: dependency-upgrade
-description: Plan, batch, and verify dependency upgrades safely. Triages outdated packages into risk tiers, upgrades in order (dev/minor/patch first, runtime majors last), verifies each batch before moving on, and produces an auditable commit sequence. Use when asked to "upgrade deps", "bump packages", "update node_modules", "fix vulnerabilities", "upgrade React/Node/TypeScript", or after `/gsd start dep-upgrade`. Complements the dep-upgrade workflow template with execution-level rigor.
+description: Plan, batch, and verify dependency upgrades safely. Triages outdated packages into risk tiers, upgrades in order (dev/minor/patch first, runtime majors last), verifies each batch before moving on, and produces an auditable commit sequence. Use when asked to "upgrade deps", "bump packages", "update node_modules", "fix vulnerabilities", "upgrade React/Node/TypeScript", or after `/gsd start dep-upgrade`.
 ---
 
-<objective>
-Turn a pile of outdated packages into a series of small, verifiable upgrades with clean commits. The deliverable is an ordered upgrade plan, executed with verification between batches, and a summary that flags anything risky for follow-up. No big-bang upgrades.
-</objective>
+# Dependency upgrade
 
-<context>
-GSD-2 ships a `/gsd start dep-upgrade` workflow template (`src/resources/extensions/gsd/workflow-templates/dep-upgrade.md`) that structures the phases: assess → upgrade → fix breaks → verify. This skill is the execution-level detail inside the upgrade phase — how to batch, how to verify, how to recover from a breaking upgrade without losing the good ones.
+Upgrade dependencies in small **batches**. Verify each batch, and give each batch its own commit. Then the history shows which upgrade caused a break.
 
-Invocation points:
-- `/gsd start dep-upgrade` workflow is running
-- Ad-hoc "bump the deps" request
-- Security advisory response (CVE in a direct dep)
-- Framework major-version update (React 18 → 19, Node LTS bump)
-- Monthly hygiene pass
-</context>
+A script does the inventory, the batch order, the install, the checks, and the commit message. You do the judgment: read changelogs, fix code for breaking changes, and decide to continue or defer.
 
-<core_principle>
-**BATCH BY RISK, NOT BY LAZINESS.** `npm update` is a shortcut that blends safe and risky changes into one commit. When something breaks, you can't tell which dep caused it. Always separate: patches and dev-deps first, minors next, majors individually.
+## Set up
 
-**VERIFY BETWEEN BATCHES.** Run the test suite after every batch. Don't stack five batches and hope. If a batch breaks something, you need to know which one.
+Set `DEP_UPGRADE` to `bun <directory of this SKILL.md>/scripts/dep-upgrade.ts`, with an absolute path. Run it from the project root. It needs Bun, git, and ripgrep, and it has no package dependencies. It finds the package manager from the lockfile: npm, pnpm, Yarn, Bun, uv, pip, Cargo, Bundler, or Go. Each command prints one JSON object. Its `next` field tells you the next step.
 
-**ONE MAJOR PER COMMIT.** Major version bumps are where real breakage lives. Keep them isolated so the commit history tells the truth.
-</core_principle>
+Before you use a manager other than npm, pnpm, Yarn classic, or Bun, read [manager notes](references/managers.md). Read them also when you change the plan file.
 
-<process>
+## 1. Make the plan
 
-## Step 1: Take inventory
+1. Run `$DEP_UPGRADE plan`. It finds outdated direct dependencies and runs the audit. It counts the files that import each package and writes the batch plan.
+2. Examine `checks`. They must run the real build, the type check, the lint, and the full test suite. If a check is missing, run `plan --force` with one `--check name=command` for each check. The `--check` values replace the default checks.
+3. Read the changelog or release notes for each medium-risk and high-risk package. Write down each breaking change that applies to this codebase. Treat a minor release as a possible break until its changelog shows otherwise.
+4. Show the plan to the user, with the breaking changes and the audit result. Make one round of changes. To remove a package, run `$DEP_UPGRADE defer <package> --reason "<reason>"`.
 
-Run the ecosystem's outdated check. Capture output, don't act on it yet:
-- Node: `npm outdated` or `pnpm outdated` or `yarn outdated`
-- Python: `pip list --outdated` or `uv pip list --outdated`
-- Rust: `cargo outdated`
-- Ruby: `bundle outdated`
-- Go: `go list -m -u all`
+The plan is complete when the user approves it.
 
-Also capture:
-- `npm audit` (or equivalent) — security advisories
-- Current versions of language runtime, build tool, test runner
+## 2. Run the tick loop
 
-## Step 2: Classify each outdated package
+Run `$DEP_UPGRADE tick` again and again. Each **tick** does the next step and prints one action. Do that action, then tick again.
 
-For each outdated package, note:
+- **`blocked`**: The working tree has changes, or the plan has no checks. Remove the cause, then tick. Ask the user before you commit or stash changes that you did not make.
+- **`commit`**: All checks passed. Add changelog notes to the package lines in `messageFile` where they help. Stage all changes, run `git commit -F <messageFile>`, then tick.
+- **`fix`**: A step failed. Read `failure.tail`, then the full log at `failure.log`. Read the migration guide before you change code. Then choose one:
+  - The fix is small, such as a rename or a changed import. Fix the code in this batch, then tick. The tick installs and runs all checks again.
+  - The fix is large, such as the removal of an API that the code uses a lot. Remove your partial fixes, run `defer` for that package, then tick. The tick restores the manifest files and applies the rest of the batch.
+- **`done`**: Go to step 4.
 
-- **Type:** direct dep / dev-dep / transitive
-- **Kind of bump:** patch (1.2.3 → 1.2.4), minor (1.2.3 → 1.3.0), major (1.2.3 → 2.0.0)
-- **Risk:** Low (dev-dep, patch), Medium (runtime minor, dev-dep major), High (runtime major, framework, TypeScript compiler)
-- **Blast radius:** How many files in the repo import it? (Rough count via `rg`.)
-- **Has known breaking changes:** Check the CHANGELOG or release notes for any major bumps — do NOT skip this, and do NOT infer "probably fine."
+When the install fails on peer dependencies, find the package that does not agree. Defer it, or move it into the same batch in the plan file. Keep the dependency graph correct; use no force flag.
 
-## Step 3: Build the batch plan
+For an app with a dev server or a CLI, start it and do a smoke test before you commit a major batch.
 
-Order:
+## 3. Handle each deferred major
 
-1. **Batch 1 — Dev dep patches and minors.** Lowest risk, fastest feedback. Includes linters, formatters, type definitions, test runners.
-2. **Batch 2 — Runtime patches.** All patch bumps to runtime deps together.
-3. **Batch 3 — Runtime minors.** One batch per semantic group if any minor carries risk notes; otherwise one batch for the rest.
-4. **Batch 4+ — Each major, individually.** One commit per major. Framework bumps (React, Next.js, Vue, TypeScript) each get their own commit.
-5. **Batch N — Language runtime.** If bumping Node/Python/Rust, last — it changes the compile/run env for everything.
+1. Read the migration guide.
+2. Use `rg` to find each use of the changed symbols.
+3. Decide with the user: migrate now, or wait. For a large migration that is not urgent, record a follow-up task (with GSD, `/gsd start refactor`) and keep the current major.
+4. To migrate now, do the work as a separate task (with GSD, its own slice). After the migration, run the checks and an end-to-end test. The test suite can miss changes in behavior.
 
-Skip (for now):
-- Anything with "unreleased", "pre", "beta", "rc" tags unless the user explicitly wants pre-release tracking
-- Deps you know are blocked by another dep (e.g., can't bump X until Y supports it)
+The script does not change the language runtime (Node, Python, Rust, Ruby, Go). Do a runtime upgrade last, as its own commit, because it changes the build and run environment for all packages.
 
-Present the plan to the user. One round of adjustment. Then execute.
+## 4. Write the summary
 
-## Step 4: Execute a batch
-
-For each batch:
-
-1. **Start from a clean working tree.** `git status` — no uncommitted changes.
-2. **Apply the upgrades** using the ecosystem command (`npm install package@version ...`, `uv add …`, `cargo update -p …`).
-3. **Regenerate the lockfile** fully if necessary.
-4. **Build.** Run the project's real build — not just typecheck.
-5. **Test.** Run the full suite. Not a scoped subset.
-6. **Lint.** `lsp diagnostics` on changed files + the project linter.
-7. **Smoke-test the app** if it has a running surface (dev server, CLI command).
-
-If any step fails:
-- Investigate before moving on. Don't skip the batch.
-- If the failure is trivial (a rename, a deprecated import), fix it in the same commit — the upgrade broke it, the upgrade commit fixes it.
-- If the failure is non-trivial (an API you heavily depend on was removed), either pin back or split: upgrade the other deps in the batch in this commit, and handle the problem dep separately in Step 5.
-
-**Commit with a precise message:**
-
-```
-deps: bump <scope> — <what changed in one line>
-
-- package-a: 1.2.3 → 1.2.9 (patch)
-- package-b: 2.1.0 → 2.4.0 (minor — no breaking changes in CHANGELOG)
-- package-c: 3.0.1 → 3.0.2 (patch)
-
-Verified: npm test (84/84 pass), npm run build exit 0, lsp diagnostics clean.
-```
-
-## Step 5: Handle stuck majors
-
-For each major that breaks something:
-
-1. **Read the migration guide** — do not guess at the API changes.
-2. **Scope the blast radius** — `rg` for the symbols that changed.
-3. **Decide: upgrade now or defer?** If the migration is a weekend's work and not urgent, file a `/gsd start refactor` follow-up and pin the current major for now.
-4. **If upgrading now:** branch the work as its own slice (`S##`). The dep upgrade is only one task; the migration is the rest of the slice.
-5. **Verify end-to-end after migration.** The test suite alone may miss behavior changes.
-
-## Step 6: Summary
-
-After all batches, produce a rollup:
+Use the `done` output. Write this report for the user:
 
 ```markdown
-## Dependency Upgrade — <date>
+## Dependency upgrade: <date>
 
 ### Completed
-- Batch 1 (dev patches): 12 packages — commit abc1234
-- Batch 2 (runtime patches): 5 packages — commit def5678
-- Batch 3 (runtime minors): 3 packages — commit ...
-- Batch 4 (React 18 → 19): commit ... — required refactors in <files>
+- Batch 1 (dev dependency patches and minors): 12 packages, commit abc1234
+- Batch 4 (react 18 → 19): commit def5678. Refactors in <files>.
 
 ### Deferred
-- typescript 5.3 → 5.7 — requires updating 40+ decorator usages. Filed as M005.
-- vite 4 → 5 — config shape changed. Owner assigned: <user>.
+- typescript 5.3 → 5.7: 40+ decorator uses must change. Follow-up: <link or task>.
 
-### Still outdated (intentional)
-- <package> — pinned because <reason>
+### Still outdated on purpose
+- <package>: pinned because <reason>
 
 ### Security advisories
-- <CVE> resolved by <package upgrade>
-- <CVE> still open — not exploitable in our usage (see comment in package.json)
+- <advisory> resolved by <package upgrade>
+- <advisory> still open: not exploitable in our usage, because <reason>
 ```
 
-Append to `.gsd/KNOWLEDGE.md` any non-obvious gotcha from the upgrade (API changes that tripped you up, migration rituals for this codebase).
+If the project has `.gsd/KNOWLEDGE.md`, add each upgrade gotcha that is not obvious, such as an API change or a migration step for this codebase.
 
-</process>
+The work is complete when:
 
-<anti_patterns>
-
-- **`npm update` blindly.** Mixes safe and risky in one undiagnosable commit.
-- **Multiple majors in one commit.** When it breaks, you don't know which.
-- **No verification between batches.** You stack failures until nothing works.
-- **Skipping the CHANGELOG.** "It's just a minor" — until it isn't.
-- **Force-merging a failing batch with `--force`.** Leave it broken or roll back; don't lie to git.
-- **Ignoring `--legacy-peer-deps` warnings.** They're telling you the dep graph is incoherent.
-
-</anti_patterns>
-
-<success_criteria>
-
-- [ ] Each batch is in its own commit with a precise message.
-- [ ] Majors are one-per-commit.
-- [ ] Test suite, build, and lint passed after every batch (per `verify-before-complete`).
-- [ ] Stuck upgrades are documented with a concrete next step (filed as slice/milestone, or pinned with a reason).
-- [ ] Security advisories are addressed or explicitly triaged.
-- [ ] Summary report exists for the user to review.
-
-</success_criteria>
+- Each batch has its own commit, and each major family has its own batch.
+- All checks passed after each batch.
+- Each deferred package has a reason and a next step: a follow-up task, or a pin with a reason.
+- Each security advisory is resolved or has a written triage.
+- The user has the summary report.
