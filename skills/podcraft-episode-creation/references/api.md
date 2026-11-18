@@ -1,40 +1,58 @@
 # Podcraft API client
 
-The bundled [client](../scripts/podcraft_api.py) handles Podcraft's tRPC queries,
-series creation, Generated/BYOS creation, and basic delivery verification. Audio imports use the
-multipart endpoint or local CLI described in [imports.md](imports.md).
+The bundled [client](../scripts/podcraft_api.py) does all Podcraft service calls
+for this skill: series, Generated and BYOS creation, audio imports,
+reconciliation, and delivery checks. Run `podcraft_api.py <command> --help` for
+the flags of a command.
 
 ## Connection
 
 The default base URL is the current server's Tailscale DNS name:
-`http://gm-home-server.geep-clownfish.ts.net:5200`.
-
-Set this variable for the curl examples as well as the bundled client:
+`http://gm-home-server.geep-clownfish.ts.net:5200`. To change it, set
+`PODCRAFT_API_BASE_URL`, or give `--base-url` before the command:
 
 ```bash
 export PODCRAFT_API_BASE_URL=http://100.87.53.41:5200
 ```
 
-Podcraft currently has no API token or login. Network policy is the only access
-control. The server must bind to a tailnet-reachable address, the caller must be
-connected to the same tailnet, and TCP port 5200 must be allowed between them.
-Use this private application origin for management and uploads. The protected
-subscription gateway serves feeds and media only. The server's `FEED_BASE_URL`
-must also be reachable by the caller for feed audio links to work.
+Podcraft has no API token or login. Network policy is the only access control.
+The server must bind to a tailnet address, the caller must be on the same
+tailnet, and TCP port 5200 must be open between them. The server's
+`FEED_BASE_URL` must also be reachable, because RSS audio links use it.
 
-## Read-only preflight
+## Output and exit codes
+
+Data goes to stdout as JSON. Diagnostics go to stderr. Exit 0 means success or
+all gates passed. Exit 1 means an error or a failed gate. `wait` uses 2 for a
+failed episode and 3 for a timeout. `import` uses 4 when the outcome is unknown.
+
+## Readiness
+
+For Generated and BYOS, require full readiness and resolve the voice:
+
+```bash
+python3 "$SKILL_DIR/scripts/podcraft_api.py" health --ready
+python3 "$SKILL_DIR/scripts/podcraft_api.py" voices
+```
+
+Imports need only the database and ffprobe. A TTS failure can make full
+readiness `degraded` while imports stay usable. `import --dry-run` does this
+check. To do it alone:
+
+```bash
+python3 "$SKILL_DIR/scripts/podcraft_api.py" health --require db --require ffprobe
+```
+
+## Series
 
 ```bash
 python3 "$SKILL_DIR/scripts/podcraft_api.py" series
 ```
 
-`series` supplies each existing slug and ID. The bundled creation commands and
-local import CLI take a slug; the multipart import endpoint takes the series ID.
+This lists each series with its slug and ID. All commands take the slug.
 
-## Create a missing series
-
-Creating a series is a write. Run the dry run, present its payload, and submit
-once only after the user authorizes that series:
+A new series is a write. Run the dry run, show its payload to the user, and
+submit once only after the user authorizes that series:
 
 ```bash
 python3 "$SKILL_DIR/scripts/podcraft_api.py" series create \
@@ -46,46 +64,30 @@ python3 "$SKILL_DIR/scripts/podcraft_api.py" series create \
 
 Optional flags are `--voice` (default `af_heart`), `--persona-id`, `--category`
 (default `Technology`), `--author` (default `AI Podcast`), `--image-url`, and
-`--default`. The slug is permanent and becomes the feed path
-`/api/feed/<slug>`. It is 1 to 100 lowercase letters, digits, and single
-hyphens; `new`, `edit`, `api`, `settings`, and `episodes` are reserved. The title
-is at most 200 characters and the description at most 2,000.
+`--default`. The slug is permanent and becomes the feed path `/api/feed/<slug>`.
+The client validates the slug, title, and description limits, and the voice and
+persona against the service. It fails when the slug exists; then use the
+existing series. With `--default`, `replacesDefault` names the series that loses
+default status. Success prints the new series with its `id`. If the response is
+lost, run `series` and look for the slug before another attempt.
 
-The dry run and the submission both validate voice and persona against the
-service and fail when the slug already exists. Use the existing series in that
-case. With `--default`, the plan names the series in `replacesDefault`, which
-loses default status. Success prints the new series object with its `id`. If the
-response is lost, run `series` and look for the slug before another attempt.
+## Episodes
 
-For Generated and BYOS, require full readiness and resolve the voice:
-
-```bash
-python3 "$SKILL_DIR/scripts/podcraft_api.py" health --ready
-python3 "$SKILL_DIR/scripts/podcraft_api.py" voices
-```
-
-For imports, inspect the readiness response directly:
-
-```bash
-curl --silent --show-error --connect-timeout 10 --max-time 20 \
-  "$PODCRAFT_API_BASE_URL/api/health?ready=true"
-```
-
-Require `checks.db.ok` and `checks.ffprobe.ok` to be `true`. Read the JSON even if
-the response is HTTP 503. TTS and script-generator failures can make full readiness
-degraded while imports remain usable. If either required check is missing or
-false, resolve it before submission. Local audio extraction also needs FFmpeg.
-
-Inspect an episode without waiting:
+Get one episode without a wait:
 
 ```bash
 python3 "$SKILL_DIR/scripts/podcraft_api.py" status "$EPISODE_ID"
 ```
 
-The client's data commands write JSON to stdout and diagnostics to stderr.
-Set `PODCRAFT_API_BASE_URL` or pass global `--base-url` before the subcommand.
+If a submission response is lost or unclear, find the episode before another
+submission. Give the values of that submission:
 
-For an ambiguous submission, use paginated `episode.list` for the selected series
-and `episode.get` for candidate details. The client's `iter_series_episodes`
-performs these read-only calls. List results omit import hashes and source IDs;
-episode detail includes them.
+```bash
+python3 "$SKILL_DIR/scripts/podcraft_api.py" reconcile --series "$SERIES_SLUG" \
+  --title "$TITLE" --script-file "$SCRIPT_FILE"
+```
+
+Use `--topic` for Generated, `--title` and `--script-file` for BYOS, and
+`--source-id` and `--file` for imports. Read `outcome`: `one` is a full match,
+`none` is no match, and `review` needs you to compare `matched` and `differs`
+for each candidate.

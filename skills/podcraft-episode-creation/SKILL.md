@@ -7,8 +7,8 @@ disable-model-invocation: true
 # Podcraft episode creation
 
 Deliver one ready, playable episode from a topic, script, or existing recording.
-The API workflow needs Python 3 and tailnet access. Audio uploads also use curl
-and ffprobe. The local import CLI needs the Podcraft checkout.
+The API workflow needs Python 3 and tailnet access. Audio imports also need
+ffprobe on this host. The local import CLI needs the Podcraft checkout.
 
 ## 1. Select the branch
 
@@ -28,14 +28,13 @@ Set `SKILL_DIR` to this skill's absolute directory. Read
 Resolve the target series and run the selected branch's preflight. When the
 series is missing, plan its creation with the dry run in the API reference.
 
-Generated and BYOS commands have a client dry run. The local import CLI validates
-with `--dry-run`. Multipart API imports use the read-only preflight in their
-reference; uploading creates an episode.
+Each branch has a `--dry-run` that submits nothing: `create` for Generated and
+BYOS, and `import` or the local import CLI for imports.
 
-**Complete when:** required dependencies pass, the series exists or its creation
-dry run passes, and the source,
-hash, metadata, and concrete submission command are recorded. Name any validation
-that only the import API can perform during submission.
+**Complete when:** the dry run passes with no blockers, the series exists or its
+creation dry run passes, and the source, hash, metadata, and exact submission
+command are recorded. For an API import, also record `serverOnlyChecks` as
+pending.
 
 ## 3. Authorize
 
@@ -54,9 +53,9 @@ Run the selected branch's submission command once. Keep its response, diagnostic
 exit status, and episode ID in private evidence. Generated and BYOS submissions
 start background generation. A successful import returns a ready episode.
 
-If the response is lost or ambiguous, reconcile against existing episodes before
-another submission. For repeat imports, follow the import reference's rules for
-source IDs and preserve the original source and metadata.
+If the response is lost or unclear, run `reconcile` before another submission
+(see [references/api.md](references/api.md)). For a repeat import, keep the
+original source ID, source file, and metadata.
 
 **Complete when:** one submission returns an episode ID, or a failed attempt has
 preserved evidence.

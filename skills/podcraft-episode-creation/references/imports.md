@@ -1,123 +1,144 @@
 # Audio import contract
 
-Use this branch for an existing recording. Podcraft validates the media, preserves
+Use this branch for an existing recording. Podcraft validates the media, keeps
 its bytes, and returns a ready episode with `sourceType=imported`. It does not
-write a script, run TTS, or encode the audio. Imported episodes are excluded from
-generation and retry.
+write a script, run TTS, or encode the audio. Generation and retry do not apply
+to imported episodes.
 
 ## Resolve the source
 
-Record the existing series, title, absolute audio path, byte count, and SHA-256.
-Use a stable source ID for automated imports, such as `publisher:asset-123`.
-Derive it from the publisher's canonical asset ID; keep signed media URLs out of
-the source ID. Record optional description and episode number before submission.
+Decide these values and record them before preflight:
 
-The file must be a nonempty MP3 or M4A AAC file, at most 1 GiB. Its plain filename
-must match the format. Inspect the actual codec and duration, then hash the bytes:
+- the existing series slug;
+- the title, and an optional description and episode number;
+- the absolute path of the audio file;
+- a stable source ID, such as `publisher:asset-123`.
 
-```bash
-ffprobe -v error -protocol_whitelist file -format_whitelist mp3,mov \
-  -show_entries format=format_name,duration:stream=codec_type,codec_name:stream_disposition=attached_pic \
-  -of json "$AUDIO_FILE"
-sha256sum -- "$AUDIO_FILE"
-```
+Make the source ID from the publisher's canonical asset ID. Do not put a signed
+media URL in it. Keep the same source ID for each attempt on the same recording.
 
-Require one audio stream: MP3 in an MP3 container, or AAC in an M4A container.
-Cover art is allowed; moving video and other media streams are rejected. Prepare
-an audio-only file before importing a video. For an AAC source, stream copy
-preserves the audio without another encode:
+The file must be MP3 audio in an MP3 file or AAC audio in an M4A file. Cover art
+is permitted. If the source is a video with AAC audio, make an audio-only copy
+without a new encode:
 
 ```bash
 ffmpeg -i "$VIDEO_FILE" -map 0:a:0 -vn -c:a copy \
   -movflags +faststart "$AUDIO_FILE"
 ```
 
-Run the import readiness checks in [api.md](api.md). Choose one submission path.
+## Preflight
+
+```bash
+python3 "$SKILL_DIR/scripts/podcraft_api.py" import --dry-run \
+  --series "$SERIES_SLUG" --file "$AUDIO_FILE" \
+  --title "$TITLE" --source-id "$SOURCE_ID"
+```
+
+Add `--description` or `--episode-number` only for decided values. Use the same
+values for the dry run and the submission. The dry run sends no upload.
+
+It applies the server's rules on this host: filename, size, ffprobe format,
+metadata limits, and `db` and `ffprobe` readiness. It also reads the series
+episodes and predicts the server decision. Read these fields:
+
+- `blockers`: each item stops the submission. Resolve it first.
+- `prediction.decision`: `new`, `reuse` (an identical earlier import), or
+  `conflict`. `prediction.reasons` gives the cause of a conflict.
+- `source.sha256`, `source.bytes`, `source.duration`, `source.mimeType`: record
+  them as the authorized source.
+- `serverOnlyChecks`: record them as pending. The server does them only during
+  the upload.
+
+For a `conflict`, examine the existing episode in `prediction.existingEpisodeId`
+and decide with the user. Do not change the source ID to go around a conflict.
+
+## Submit
+
+After authorization, submit once:
+
+```bash
+EVIDENCE_DIR="$(mktemp -d)"
+python3 "$SKILL_DIR/scripts/podcraft_api.py" import \
+  --series "$SERIES_SLUG" --file "$AUDIO_FILE" \
+  --title "$TITLE" --source-id "$SOURCE_ID" \
+  --expect-sha256 "$SOURCE_SHA256" --evidence-dir "$EVIDENCE_DIR"
+```
+
+`--expect-sha256` is the dry run's `source.sha256`. The command does the
+preflight again and stops if the file or a blocker changed. It streams the file
+as a multipart upload. It writes the plan, response headers, and response body
+into the evidence directory, which must have mode 0700. Read `outcome`:
+
+| `outcome` | Exit | Meaning and next action |
+| --- | --- | --- |
+| `created` | 0 | New episode. Continue with [verification.md](verification.md). |
+| `reused` | 0 | Identical earlier import. Verify the returned ID. |
+| `rejected` | 1 | `result.error` and `result.code` give the server cause. Resolve it with the user. |
+| `notSubmitted` | 1 | No connection opened. You can run the same command again. |
+| `unknown` | 4 | The response is lost. Run `reconcile` (below) before any new attempt. |
+
+`episodeId` is the new or reused episode. RSS uses the Podcraft creation date. It
+does not use the original publication date.
+
+## Reconcile an unclear submission
+
+```bash
+python3 "$SKILL_DIR/scripts/podcraft_api.py" reconcile \
+  --series "$SERIES_SLUG" --source-id "$SOURCE_ID" --file "$AUDIO_FILE"
+```
+
+Read `outcome`. `one` gives the episode that matches all criteria. `none` means
+no episode matches, so a second submission with the same values is safe.
+`review` means partial matches: compare `matched` and `differs` for each
+candidate, then decide.
 
 ## Local CLI on the server
 
-Use this path when the Podcraft checkout and its production environment file are
-available. Read the CLI's `--help` for current options. Run from the checkout:
+Use this path only when the Podcraft checkout and its production environment
+file are on this host. Read the CLI's `--help` for current options. It has its
+own `--dry-run` with the server's full checks, including database conflicts:
 
 ```bash
 cd /opt/stacks/podcast-creator
 bun scripts/import-audio-episode.ts \
   --env-file /opt/stacks/podcast-creator/.env.production \
-  --series "$SERIES_SLUG" \
-  --file "$AUDIO_FILE" \
-  --title "$TITLE" \
-  --source-id "$SOURCE_ID" \
-  --dry-run
+  --series "$SERIES_SLUG" --file "$AUDIO_FILE" \
+  --title "$TITLE" --source-id "$SOURCE_ID" --dry-run
 ```
 
-Pass the production `--env-file` explicitly. It overrides inherited environment
-values and selects the local database and managed audio storage. It must contain
-`DATABASE_URL`, a SQLite file URL, and `EPISODES_DIR`. Keep its contents private.
-The database must already exist with the import migration applied. Resolve schema
-deployment through the app's migration workflow before importing.
+Give `--env-file` explicitly. It selects the local database and audio storage,
+and it must contain `DATABASE_URL` and `EPISODES_DIR`. Keep its contents
+private. The database must already have the import migration. `--base-url`
+changes only the returned links. After authorization, remove `--dry-run` and run
+once. Require exit code 0 and a nonempty result `id`.
 
-Relative database and storage paths resolve from the checkout. The input audio
-path resolves from the caller's working directory. `--base-url` changes returned
-links only; it does not select a server or database.
+## Collections
 
-The dry run copies the audio into temporary storage and validates the format,
-series, numbering, and duplicate rules. It removes the copy and leaves no episode
-or persisted failure state. After authorization, remove `--dry-run` and run once.
-Add `--description` or `--episode-number` only for resolved values, using the same
-values during preflight and submission. Stdout is one JSON result; diagnostics
-go to stderr. Require exit code zero and a nonempty result `id`.
+Keep a manifest file for a collection. Use one item for each released recording
+and for each requested bonus item:
 
-## Multipart API from another host
+```json
+{
+  "series": "toylight",
+  "items": [
+    {"sourceId": "dropout:4192580", "title": "Episode 1", "file": "ep1.m4a",
+     "episodeNumber": 1, "kind": "released"},
+    {"sourceId": "dropout:4300001", "title": "Bonus", "sha256": "…", "kind": "bonus"}
+  ]
+}
+```
 
-Set `PODCRAFT_API_BASE_URL` as described in [api.md](api.md). Resolve `SERIES_ID`
-from `series`; the endpoint does not accept a series slug.
-
-API preflight consists of the read-only readiness, series, source-format, size,
-and hash checks above. The API has no dry-run endpoint. Database conflicts and
-the server's media validation are checked during the authorized upload. Record
-those as pending during preflight.
-
-Create a private evidence directory. Submit once with curl, which streams the
-file from disk and saves the response separately from its headers:
+Each item needs `sourceId` and `title`. An item can set its own `series`. A
+relative `file` is relative to the manifest. Add `description` only when the
+import used one. Then run:
 
 ```bash
-EVIDENCE_DIR="$(mktemp -d)"
-chmod 700 "$EVIDENCE_DIR"
-curl --silent --show-error --fail-with-body \
-  --connect-timeout 10 --max-time 1800 \
-  --dump-header "$EVIDENCE_DIR/import.headers" \
-  --output "$EVIDENCE_DIR/import.json" \
-  --form-string "seriesId=$SERIES_ID" \
-  --form-string "title=$TITLE" \
-  --form-string "sourceId=$SOURCE_ID" \
-  --form "file=@$AUDIO_FILE" \
-  "$PODCRAFT_API_BASE_URL/api/episodes/import"
+python3 "$SKILL_DIR/scripts/podcraft_api.py" reconcile --manifest "$MANIFEST"
 ```
 
-Add `--form-string "description=$DESCRIPTION"` and
-`--form-string "episodeNumber=$EPISODE_NUMBER"` only for resolved values. The
-endpoint requires `file`, `seriesId`, and `title`; `sourceId` is optional in the
-API but required by this workflow for automated imports. Use the server's
-structured error response to resolve rejected metadata or media.
-
-A new import returns HTTP 201. Reusing an identical source ID returns HTTP 200.
-Require successful HTTP status, valid JSON, and a nonempty `id`. Confirm `ready`
-and provenance through `status <id>`, then apply [verification.md](verification.md).
-
-## Reconcile and repeat
-
-Keep the source ID, series, trimmed title and description, audio bytes, and any
-explicit episode number unchanged when repeating an import. The service returns
-the original ID and number for an identical import. HTTP 409 means a conflict,
-including changed metadata/audio, occupied numbering, or audio already imported
-in that series under another source ID. Inspect the existing episode before
-choosing another action. A lost response does not justify a new source ID.
-
-Both paths return the import result fields. Useful fields include
-`id`, `episodeNumber`, `duplicate`, `audioMimeType`, `audioSize`, and `audioDuration`.
-Original publication dates are not imported; RSS uses Podcraft's creation date.
-
-For a collection, keep a manifest of canonical source IDs, paths, metadata, and
-hashes. Reconcile every released recording and requested bonus item against it.
-Report ready, failed, and pending counts separately. A partial collection remains
-pending even when every completed upload is playable.
+Read `counts.total`. It gives `ready`, `mismatch`, `failed`, and `pending`
+separately. `counts.byKind` splits them into released and bonus items. For each
+`mismatch`, read `differences` and decide with the user to accept it or to
+correct it. `unexpectedImports` lists imported episodes that the manifest does
+not name. Exit code 0 means that all items are ready. A collection with one or
+more pending items stays pending, also when each completed upload plays.

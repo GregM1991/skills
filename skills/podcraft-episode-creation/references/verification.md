@@ -2,93 +2,80 @@
 
 Readiness, delivery, and listening quality are separate gates.
 
-## Confirm the episode
+## Wait for generation
 
-Generated and BYOS submissions require a wait:
+Generated and BYOS submissions need a wait. Imports are ready on return; go to
+the next section.
 
 ```bash
 python3 "$SKILL_DIR/scripts/podcraft_api.py" wait "$EPISODE_ID"
 ```
 
-The command polls `episode.get` until `ready` or `failed`, prints status changes
-to stderr, and writes the final episode JSON to stdout. It never starts or
-retries generation. Override the one-hour bound only when the expected episode
-length warrants it:
-
-```bash
-python3 "$SKILL_DIR/scripts/podcraft_api.py" wait "$EPISODE_ID" \
-  --timeout-seconds 7200 \
-  --interval-seconds 10
-```
-
-Imports return a ready episode. Inspect it directly:
-
-```bash
-python3 "$SKILL_DIR/scripts/podcraft_api.py" status "$EPISODE_ID"
-```
-
-For every branch, require status `ready`, a nonempty episode ID, positive
-`audioDuration` and `audioSize`, an audio path, and an empty `error`. Preserve
-`error` and `failedStep` from a failed result. Imported audio must retain
-`sourceType=imported`, the expected source ID, series, and episode number, with
-an empty script. Resolve an unavailable import from its source and import
-evidence; generation and retry do not repair imported recordings.
+The command polls until `ready` or `failed`. It writes status changes to stderr
+and the final episode JSON to stdout. It never starts or retries generation.
+Exit 2 means `failed`: keep `error` and `failedStep` as evidence. Exit 3 means
+the time limit stopped the wait. Increase `--timeout-seconds` (default 3600)
+only when the expected episode length needs it.
 
 ## Verify delivery
+
+For Generated and BYOS:
 
 ```bash
 python3 "$SKILL_DIR/scripts/podcraft_api.py" verify "$EPISODE_ID"
 ```
 
-The command checks the ready state, episode page, a one-byte audio range, and
-series RSS membership. It prints JSON containing the episode, audio, and feed
-URLs plus each gate result. Require exit code zero, then confirm the branch's
-additional checks below. The command does not compare full audio hashes or parse
-RSS enclosure metadata.
-
-For every episode, inspect its RSS item by exact GUID. Require the expected
-episode number, enclosure URL, byte length, and MIME type. Check GET and HEAD on
-the audio, including `Content-Length` and `Accept-Ranges: bytes`. The one-byte
-request must return HTTP 206, one byte, and `Content-Range: bytes 0-0/<size>`.
-
-## Verify imported bytes
-
-Match the MIME type to the imported format: `audio/mpeg` for MP3 and `audio/mp4`
-for M4A AAC. Require the served length and stored `audioSize` to equal the source
-byte count. Compare `audioDuration` with the source's ffprobe result, within one
-second.
-
-Compare three SHA-256 values: the source file, `audioSha256` from episode detail,
-and the complete served audio. Save the served audio in a private temporary
-directory, using the audio URL returned by verification:
+For an import, give the original file and the authorized values:
 
 ```bash
-curl --fail --silent --show-error --max-time 1800 \
-  --output "$EVIDENCE_DIR/served-audio" "$AUDIO_URL"
-sha256sum -- "$AUDIO_FILE" "$EVIDENCE_DIR/served-audio"
+python3 "$SKILL_DIR/scripts/podcraft_api.py" verify "$EPISODE_ID" \
+  --source "$AUDIO_FILE" --source-id "$SOURCE_ID" --episode-number "$EPISODE_NUMBER"
 ```
 
-Require a successful download before comparing hashes. Use a directory with mode
-0700 and retain the source. Also check a suffix range and an out-of-bounds range:
-the former must match the source bytes; the latter must return HTTP 416 with
-`Content-Range: bytes */<size>`. A passed basic `verify` result alone does not
-complete the import checks.
+The command downloads the full audio once and streams it through SHA-256. Exit
+code 0 means that all gates passed. Read `failedGates` and `problems` for each
+failure. The gates are:
+
+| Gate | Check |
+| --- | --- |
+| `production` | Status `ready`, positive duration and size, an audio path, no `error`. |
+| `episodePage` | The episode page returns HTTP 200. |
+| `audioHead`, `audioGet` | HTTP 200, `Content-Length` equals `audioSize`, `Accept-Ranges: bytes`. |
+| `audioRange` | `bytes=0-0` returns HTTP 206, one byte, `Content-Range: bytes 0-0/<size>`. |
+| `seriesFeed`, `feedItem` | The series RSS has one item with the exact GUID, with the episode number, enclosure length, MIME type, and audio URL. |
+| `enclosureRange` | The RSS enclosure URL (the server's `FEED_BASE_URL`) returns the first byte. |
+| `storedSha256` | When stored, `audioSha256` equals the served audio. |
+| `episodeNumber` | Equals `--episode-number`, when given. |
+
+An imported episode also gets these gates. Without `--source`, `importSource`
+fails:
+
+| Gate | Check |
+| --- | --- |
+| `importProvenance` | `sourceType=imported`, empty script, and `--source-id` when given. |
+| `importMime` | `audio/mpeg` for MP3 or `audio/mp4` for M4A, stored and served. |
+| `importSize` | Source bytes, `audioSize`, and served bytes are equal. |
+| `importDuration` | `audioDuration` is within one second of the source ffprobe duration. |
+| `importSha256` | Source, stored `audioSha256`, and served audio hashes are equal. |
+| `suffixRange` | A suffix range returns the last source bytes. |
+| `outOfRange` | `bytes=<size>-` returns HTTP 416 and `Content-Range: bytes */<size>`. |
+
+Keep the original source file. Generation and retry do not repair an imported
+recording. Resolve an import failure from the source and the import evidence.
 
 ## Verify subscriptions when requested
 
 Follow [subscriptions.md](subscriptions.md) for separate series feeds, protected
-URLs, and AntennaPod import. Check the subscriber's actual feed and enclosure
-URLs, not only the private application endpoints. Preserve GUIDs and numbering
-through the gateway and require the same MIME and byte-range behavior.
+URLs, and AntennaPod import.
 
 ## Human gate
 
-Report these as pending until a person evaluates them:
+Report these as pending until a person examines them:
 
 - For Generated and BYOS: intelligibility, pronunciation, pacing, voice
   suitability, and factual or curricular correctness when applicable.
-- For imported recordings: the intended recording, audible start and end, and
-  listening quality. Byte identity alone does not prove the source was correct.
-- For every branch: whether the episode achieved its intended listener outcome.
+- For imported recordings: the correct recording, an audible start and end, and
+  listening quality. Equal bytes do not prove that the source was correct.
+- For every branch: whether the episode gave the intended listener outcome.
 
-Mechanical success never implies a passed human gate.
+Mechanical success never means that a human gate passed.

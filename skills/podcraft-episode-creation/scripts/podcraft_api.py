@@ -5,198 +5,30 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import json
 import os
 import re
 import sys
 import time
-import urllib.error
 import urllib.parse
-import urllib.request
 from pathlib import Path
 from typing import Any
 
-DEFAULT_BASE_URL = "http://gm-home-server.geep-clownfish.ts.net:5200"
+from podcraft_client import (
+    DEFAULT_BASE_URL,
+    ClientError,
+    PodcraftClient,
+    bounded,
+    iter_series_episodes,
+    print_json,
+    read_text,
+)
+from podcraft_delivery import cmd_opml_check, cmd_verify
+from podcraft_imports import cmd_import, cmd_reconcile
+
 ACTIVE_STATUSES = {"pending", "generating_script", "generating_audio", "processing"}
 TERMINAL_STATUSES = {"ready", "failed"}
 SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 RESERVED_SLUGS = {"new", "edit", "api", "settings", "episodes"}
-
-
-class ClientError(RuntimeError):
-    """A local validation, transport, HTTP, or tRPC failure."""
-
-
-def compact_json(value: Any) -> bytes:
-    return json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode()
-
-
-def print_json(value: Any) -> None:
-    json.dump(value, sys.stdout, ensure_ascii=False, indent=2)
-    sys.stdout.write("\n")
-
-
-class PodcraftClient:
-    def __init__(self, base_url: str, timeout_seconds: float) -> None:
-        self.base_url = base_url.rstrip("/")
-        self.timeout_seconds = timeout_seconds
-
-    def request(
-        self,
-        path: str,
-        *,
-        method: str = "GET",
-        body: Any | None = None,
-        headers: dict[str, str] | None = None,
-    ) -> tuple[Any, int, dict[str, str]]:
-        data = compact_json(body) if body is not None else None
-        request_headers = {
-            "Accept": "application/json",
-            "X-TRPC-Source": "podcraft-episode-creation-skill",
-            **(headers or {}),
-        }
-        if data is not None:
-            request_headers["Content-Type"] = "application/json"
-        request = urllib.request.Request(
-            f"{self.base_url}{path}",
-            data=data,
-            headers=request_headers,
-            method=method,
-        )
-        try:
-            with urllib.request.urlopen(
-                request, timeout=self.timeout_seconds
-            ) as response:
-                raw = response.read()
-                response_headers = {
-                    key.lower(): value for key, value in response.headers.items()
-                }
-                parsed = json.loads(raw) if raw else None
-                return parsed, response.status, response_headers
-        except urllib.error.HTTPError as error:
-            raw = error.read()
-            try:
-                parsed = json.loads(raw) if raw else None
-            except json.JSONDecodeError:
-                parsed = raw.decode(errors="replace")
-            raise ClientError(
-                f"HTTP {error.code} from {method} {path}: {json.dumps(parsed, ensure_ascii=False)}"
-            ) from error
-        except urllib.error.URLError as error:
-            raise ClientError(
-                f"Cannot reach {self.base_url}: {error.reason}"
-            ) from error
-        except json.JSONDecodeError as error:
-            raise ClientError(f"Non-JSON response from {method} {path}") from error
-
-    def raw_request(
-        self,
-        path: str,
-        *,
-        method: str = "GET",
-        headers: dict[str, str] | None = None,
-        max_bytes: int | None = None,
-    ) -> tuple[bytes, int, dict[str, str]]:
-        request = urllib.request.Request(
-            f"{self.base_url}{path}",
-            headers=headers or {},
-            method=method,
-        )
-        try:
-            with urllib.request.urlopen(
-                request, timeout=self.timeout_seconds
-            ) as response:
-                return (
-                    response.read() if max_bytes is None else response.read(max_bytes),
-                    response.status,
-                    {key.lower(): value for key, value in response.headers.items()},
-                )
-        except urllib.error.HTTPError as error:
-            return (
-                error.read() if max_bytes is None else error.read(max_bytes),
-                error.code,
-                {key.lower(): value for key, value in error.headers.items()},
-            )
-        except urllib.error.URLError as error:
-            raise ClientError(
-                f"Cannot reach {self.base_url}: {error.reason}"
-            ) from error
-
-    def trpc(self, procedure: str, payload: Any, *, mutation: bool = False) -> Any:
-        path = f"/api/trpc/{urllib.parse.quote(procedure)}"
-        envelope = {"json": payload}
-        if mutation:
-            try:
-                response, _, _ = self.request(path, method="POST", body=envelope)
-            except ClientError as error:
-                raise ClientError(
-                    f"Create request did not return a usable result. Do not retry blindly. {error}"
-                ) from error
-        else:
-            query = urllib.parse.urlencode(
-                {
-                    "input": json.dumps(
-                        envelope, ensure_ascii=False, separators=(",", ":")
-                    )
-                }
-            )
-            response, _, _ = self.request(f"{path}?{query}")
-
-        if not isinstance(response, dict):
-            raise ClientError(f"Malformed tRPC response for {procedure}")
-        error = response.get("error")
-        if error is not None:
-            details = error.get("json", error) if isinstance(error, dict) else error
-            rendered = json.dumps(details, ensure_ascii=False)
-            raise ClientError(f"Podcraft {procedure} failed: {rendered}")
-        try:
-            return response["result"]["data"]["json"]
-        except (KeyError, TypeError) as error:
-            raise ClientError(f"Malformed tRPC result for {procedure}") from error
-
-    def series(self) -> list[dict[str, Any]]:
-        result = self.trpc("series.list", None)
-        if not isinstance(result, list):
-            raise ClientError("series.list returned a non-list result")
-        return result
-
-    def resolve_series(self, slug: str) -> dict[str, Any]:
-        series = self.series()
-        match = next((item for item in series if item.get("slug") == slug), None)
-        if match is None:
-            available = ", ".join(sorted(str(item.get("slug")) for item in series))
-            raise ClientError(
-                f'Series "{slug}" not found. Available slugs: {available}'
-            )
-        return match
-
-    def episode(self, episode_id: str) -> dict[str, Any]:
-        result = self.trpc("episode.get", {"id": episode_id})
-        if not isinstance(result, dict):
-            raise ClientError("episode.get returned a non-object result")
-        return result
-
-
-def read_text(path_text: str, label: str, maximum: int) -> tuple[Path, str]:
-    path = Path(path_text).expanduser().resolve()
-    try:
-        text = path.read_text(encoding="utf-8").strip()
-    except OSError as error:
-        raise ClientError(f"Cannot read {label} file {path}: {error}") from error
-    if not text:
-        raise ClientError(f"{label} file is empty after trimming: {path}")
-    if len(text) > maximum:
-        raise ClientError(f"{label} is {len(text)} characters; maximum is {maximum}")
-    return path, text
-
-
-def bounded(value: str, label: str, maximum: int) -> str:
-    trimmed = value.strip()
-    if not trimmed:
-        raise ClientError(f"{label} is empty after trimming")
-    if len(trimmed) > maximum:
-        raise ClientError(f"{label} is {len(trimmed)} characters; maximum is {maximum}")
-    return trimmed
 
 
 def series_slug(value: str) -> str:
@@ -250,24 +82,6 @@ def validate_remote_options(
             raise ClientError("--image-url must be an absolute HTTP or HTTPS URL")
 
 
-def iter_series_episodes(client: PodcraftClient, series_id: str):
-    offset = 0
-    while True:
-        page = client.trpc(
-            "episode.list", {"limit": 100, "offset": offset, "seriesId": series_id}
-        )
-        if not isinstance(page, dict):
-            raise ClientError("episode.list returned a non-object result")
-        episodes = page.get("episodes", [])
-        if not isinstance(episodes, list):
-            raise ClientError("episode.list returned a non-list episodes field")
-        for episode in episodes:
-            yield client.episode(episode["id"])
-        offset += len(episodes)
-        if not episodes or offset >= int(page.get("total", 0)):
-            return
-
-
 def reject_duplicate_byos(
     client: PodcraftClient,
     *,
@@ -289,6 +103,16 @@ def reject_duplicate_byos(
 
 
 def cmd_health(client: PodcraftClient, args: argparse.Namespace) -> int:
+    if args.require:
+        result = client.readiness()
+        checks = result.get("checks") if isinstance(result.get("checks"), dict) else {}
+        failed = [
+            name for name in args.require
+            if not (isinstance(checks.get(name), dict) and checks[name].get("ok") is True)
+        ]
+        result["required"] = {"checks": args.require, "failed": failed}
+        print_json(result)
+        return 1 if failed else 0
     suffix = "?ready=true" if args.ready else ""
     try:
         result, status, _ = client.request(f"/api/health{suffix}")
@@ -479,58 +303,6 @@ def cmd_wait(client: PodcraftClient, args: argparse.Namespace) -> int:
         time.sleep(args.interval_seconds)
 
 
-def cmd_verify(client: PodcraftClient, args: argparse.Namespace) -> int:
-    episode = client.episode(args.episode_id)
-    series = episode.get("series") or {}
-    slug = series.get("slug")
-    if not slug:
-        raise ClientError("episode.get returned no series slug")
-
-    episode_url = f"{client.base_url}/episodes/{urllib.parse.quote(args.episode_id)}"
-    audio_path = f"/api/episodes/{urllib.parse.quote(args.episode_id)}/audio"
-    audio_url = f"{client.base_url}{audio_path}"
-    feed_path = f"/api/feed/{urllib.parse.quote(str(slug))}"
-    feed_url = f"{client.base_url}{feed_path}"
-
-    _, page_status, _ = client.raw_request(
-        f"/episodes/{urllib.parse.quote(args.episode_id)}", method="HEAD"
-    )
-    _, audio_status, audio_headers = client.raw_request(
-        audio_path, headers={"Range": "bytes=0-0"}, max_bytes=1024
-    )
-    feed_body, feed_status, _ = client.raw_request(feed_path)
-    feed_text = feed_body.decode(errors="replace")
-
-    gates = {
-        "production": (
-            episode.get("status") == "ready"
-            and bool(episode.get("id"))
-            and isinstance(episode.get("audioDuration"), (int, float))
-            and episode["audioDuration"] > 0
-            and not episode.get("error")
-        ),
-        "episodePage": page_status == 200,
-        "audioRange": audio_status == 206 and bool(audio_headers.get("content-range")),
-        "seriesFeed": feed_status == 200
-        and (args.episode_id in feed_text or audio_url in feed_text),
-    }
-    result = {
-        "episodeId": args.episode_id,
-        "status": episode.get("status"),
-        "duration": episode.get("audioDuration"),
-        "error": episode.get("error"),
-        "failedStep": episode.get("failedStep"),
-        "urls": {"episode": episode_url, "audio": audio_url, "feed": feed_url},
-        "gates": gates,
-        "audioResponse": {
-            "status": audio_status,
-            "contentRange": audio_headers.get("content-range"),
-        },
-    }
-    print_json(result)
-    return 0 if all(gates.values()) else 1
-
-
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(description=__doc__)
     root.add_argument(
@@ -543,6 +315,12 @@ def parser() -> argparse.ArgumentParser:
 
     health = commands.add_parser("health", help="Check service liveness or readiness")
     health.add_argument("--ready", action="store_true")
+    health.add_argument(
+        "--require",
+        action="append",
+        metavar="CHECK",
+        help="Pass when these readiness checks are ok, even if others are degraded",
+    )
     health.set_defaults(handler=cmd_health)
 
     series = commands.add_parser(
@@ -609,9 +387,57 @@ def parser() -> argparse.ArgumentParser:
     wait.add_argument("--interval-seconds", type=float, default=10)
     wait.set_defaults(handler=cmd_wait)
 
-    verify = commands.add_parser("verify", help="Check production and delivery gates")
+    verify = commands.add_parser(
+        "verify", help="Check production, audio, RSS, and imported-byte gates"
+    )
     verify.add_argument("episode_id")
+    verify.add_argument("--source", help="Original audio file of an imported episode")
+    verify.add_argument("--source-id", help="Expected import source ID")
+    verify.add_argument("--episode-number", type=int, help="Expected episode number")
     verify.set_defaults(handler=cmd_verify)
+
+    import_audio = commands.add_parser(
+        "import", help="Preflight (--dry-run) or submit one audio import"
+    )
+    import_audio.add_argument("--series", required=True, help="Series slug")
+    import_audio.add_argument("--file", required=True, help="MP3 or M4A AAC file")
+    import_audio.add_argument("--title", required=True)
+    import_audio.add_argument("--source-id", required=True)
+    import_audio.add_argument("--description")
+    import_audio.add_argument("--episode-number", type=int)
+    import_audio.add_argument("--dry-run", action="store_true")
+    import_audio.add_argument(
+        "--expect-sha256", help="source.sha256 from the authorized dry run"
+    )
+    import_audio.add_argument(
+        "--evidence-dir", help="Private directory (mode 0700) for request and response"
+    )
+    import_audio.add_argument("--upload-timeout-seconds", type=float, default=1800)
+    import_audio.set_defaults(handler=cmd_import)
+
+    reconcile = commands.add_parser(
+        "reconcile", help="Find episodes from an unclear submission, or check a manifest"
+    )
+    reconcile.add_argument("--series", help="Series slug")
+    reconcile.add_argument("--source-id")
+    reconcile.add_argument("--file", help="Audio file; compares its SHA-256")
+    reconcile.add_argument("--sha256")
+    reconcile.add_argument("--title")
+    reconcile.add_argument("--topic")
+    reconcile.add_argument("--script-file")
+    reconcile.add_argument("--manifest", help="Collection manifest JSON")
+    reconcile.set_defaults(handler=cmd_reconcile)
+
+    opml = commands.add_parser("opml-check", help="Check an OPML subscription export")
+    opml.add_argument("--url", help="Download URL of the export")
+    opml.add_argument("--file", help="Private backing OPML file")
+    opml.add_argument("--expect-filename", help="Attachment filename; default: URL basename")
+    opml.add_argument("--expect-slug", action="append", help="Series slug the file must list")
+    opml.add_argument("--check-feeds", action="store_true", help="Fetch every outline feed")
+    opml.add_argument(
+        "--expect-episode", action="append", help="Episode ID that a listed feed must deliver"
+    )
+    opml.set_defaults(handler=cmd_opml_check)
     return root
 
 
@@ -623,6 +449,8 @@ def main() -> int:
         raise ClientError("--timeout-seconds must be positive")
     if hasattr(args, "interval_seconds") and args.interval_seconds <= 0:
         raise ClientError("--interval-seconds must be positive")
+    if hasattr(args, "upload_timeout_seconds") and args.upload_timeout_seconds <= 0:
+        raise ClientError("--upload-timeout-seconds must be positive")
     client = PodcraftClient(args.base_url, args.request_timeout_seconds)
     return args.handler(client, args)
 
