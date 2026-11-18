@@ -1,0 +1,8 @@
+{
+  "name": "wayfinder-scripts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test scripts/wayfinder.test.ts"
+  }
+}

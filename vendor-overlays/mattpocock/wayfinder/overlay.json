@@ -16,6 +16,11 @@
     {
       "type": "patch",
       "patch": "check-module-depth.patch"
+    },
+    {
+      "type": "append-if-missing",
+      "target": "SKILL.md",
+      "content": "use-wayfinder-scripts.md"
     }
   ]
 }

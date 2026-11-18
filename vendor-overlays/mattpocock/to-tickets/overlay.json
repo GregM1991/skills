@@ -5,6 +5,11 @@
       "type": "append-if-missing",
       "target": "SKILL.md",
       "content": "shared-owners.md"
+    },
+    {
+      "type": "append-if-missing",
+      "target": "SKILL.md",
+      "content": "use-wayfinder-scripts.md"
     }
   ]
 }
