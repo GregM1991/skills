@@ -1,0 +1,5 @@
+interface:
+  display_name: "AnkiConnect Scripts"
+  short_description: "Request, preview and verified batch script for anki-connect"
+policy:
+  allow_implicit_invocation: false
