@@ -1,0 +1,6 @@
+interface:
+  display_name: "Triage scripts"
+  short_description: "List triage work and apply triage outcomes on GitHub"
+  default_prompt: "Use $triage-scripts to run the triage queue or apply a triage outcome."
+policy:
+  allow_implicit_invocation: false
