@@ -384,7 +384,7 @@ Common global flags for this command: [`--format`](#global-flags), [`--quiet`](#
 
 ### What gets fixed
 
-- Unused exports (removes the `export` keyword; whole-enum block when every member is unused)
+- Unused exports (removes the `export` keyword; whole-enum block when every member is unused). In an `export { ... }` list, on one line or over several lines, it removes the unused names and keeps the layout and comments of the names that stay. It deletes the full statement when no name is left.
 - Unused dependencies (removed from `package.json`)
 - Unused enum members (removed from the declaration)
 - Unused pnpm catalog entries (removed from `pnpm-workspace.yaml` by line-aware deletion). Object-form entries are removed as one block. By default, fallow also removes a contiguous YAML comment block immediately above the entry when it clearly belongs to that entry; configure this with `fix.catalog.deletePrecedingComments` (`"auto"`, `"always"`, or `"never"`). Two escape hatches keep curated comments safe regardless of policy: a `# fallow-keep` marker on any line in the block preserves it, and the `auto` policy additionally preserves section-banner blocks whose body starts with three or more `=`, `-`, `*`, `_`, `~`, `+`, or `#` characters (e.g. `# === React 18 production pins ===`). Other comments and stylistic choices are preserved. When the last entry of a catalog group is removed, the header is rewritten to `catalog: {}` / `<name>: {}` so pnpm doesn't reject the resulting null value. Entries with non-empty `hardcoded_consumers` are skipped to avoid breaking `pnpm install`; the skip is surfaced in the JSON fix output as `{"type": "remove_catalog_entry", "applied": false, "skipped": true, "skip_reason": "hardcoded_consumers", "consumers": [...]}`. The JSON action carries both `line` (first deleted line, the leading comment when policy absorbs one) and `entry_line` (the catalog entry's original 1-based line); use `entry_line` as a stable anchor across policy changes. After a successful catalog edit the CLI emits a one-line `Run pnpm install to refresh pnpm-lock.yaml` reminder, and the human stderr summary appends `(+M catalog comment lines)` to the fixed-issue count when comment lines were absorbed. The JSON envelope carries a top-level `"skipped"` count alongside `"total_fixed"` for partial-fix gating.
@@ -403,6 +403,16 @@ Issue #602: `fallow fix` withholds removals when the consumer may be invisible t
 - **Findings a file the run never fully analyzed could have distorted.** The dead-code finding carries `reachability_caveats`, meaning some source file was skipped before it was read, could not be read, or did not parse cleanly, so the import that would have credited the export or the package may never have been seen. A file over the per-file size limit is the case that fires at default settings: its first line can import the very module now reported unused. This case also covers `remove-dependency`, the most destructive write `fallow fix` performs: a package is reported unused only when no module imports its specifier, and an unread file hides exactly that import. Resolve the files named in `workspace_diagnostics[]`, then re-run.
 
 JSON output carries `{"type": "skipped", "path": "...", "skipped": true, "skip_reason": "low_confidence_off_graph"}` (or `"low_confidence_unresolved_imports"`, or `"low_confidence_incomplete_analysis"`) plus a top-level counter `skipped_low_confidence_exports: number` (always present), disjoint from `skipped`. A withheld `remove_dependency` entry keeps its own shape (`type`, `package`, `location`, `file`) with `applied: false`, `skipped: true`, the same `skip_reason`, and is counted by the sibling `skipped_low_confidence_dependencies: number`. Those entries also repeat the finding's `reachability_caveats` token array, so gate on that rather than on the reason string. Unlike the drift and encoding skips this is INTENTIONAL and does NOT change the exit code; the finding stays reported by `fallow dead-code` for manual review. High-confidence exports in normal source files are removed unchanged. The AI agent should report kept exports and packages to the user and let them decide whether the finding is truly unused before removing it by hand.
+
+### Exports that a kept re-export names
+
+`fallow fix` never removes the `export` of a declaration while a re-export that the run keeps still names it, because the type check of the fixed code then fails (TS2459). A re-export stays when `fix` does not remove it: for example, the file is skipped as low confidence, `ignoreExports` hides its names, the positional path scope excludes it, or the list statement has no safe text edit. Each withheld removal is a `remove_export` entry with `applied: false`, `skipped: true` and `skip_reason: "kept_re_export"`, counted by the top-level `skipped_kept_re_exports: number` (always present), disjoint from `skipped`. Remove the re-export first, then run `fallow fix` again. This is intentional and does not change the exit code.
+
+Limit: the check reads the re-exports from the module graph. A file that `ignorePatterns` excludes is not in the graph, so a re-export in such a file cannot hold a removal back. When an ignored file re-exports project code, run the type check after `fallow fix`.
+
+### Declarations that export more than one name
+
+One `export` keyword can export several names: `export const { a, b } = x;`, `export const [a, b] = x;` or `export const a = 1, b = 2;`. `fallow fix` removes that keyword only when every name of the declaration is unused. While one name is in use or kept, each unused name of the declaration is a `remove_export` entry with `applied: false`, `skipped: true` and `skip_reason: "shared_declaration_in_use"`, counted by the top-level `skipped_shared_declarations: number` (always present), disjoint from `skipped`. `fix` does not split the declaration, because a split evaluates the initializer twice and changes the value of a rest element. Move each unused name to a declaration without `export` by hand. This is intentional and does not change the exit code.
 
 ### File encoding contract
 
@@ -2282,7 +2292,9 @@ fallow mutation src/math.ts --kill-matrix-for "test/math.test.ts::adds" --format
 Use this mode to check whether specific tests are redundant without a full kill matrix. Repeat the flag for each target. A target is a test file (each test in it) or a test ID (`file::name`). It is exclusive with `--kill-matrix`.
 
 - Only the mutants that a target test covers run. The other mutants are `pruned` with `prune_reason: "no-target-coverage"`.
-- Each mutant runs its target tests with bail disabled, then its other covering tests with bail enabled, up to the first failure.
+- Each mutant runs its target tests with bail disabled. When no target kills it, the mutant is `not_killed_by_target`: no other test runs. After a target kill, the other covering tests run fastest first with bail enabled, up to the first failure. Only a kill by exactly one target test and no other test gets a retry. A retry that does not kill again with the same tests makes the mutant `flaky` and the target `incomplete`.
+- This `target-first` mode has no score: `summary.score` is `null`, and `--min-score` exits `2`.
+- `--kill-matrix-full` also runs the other covering tests of a mutant that no target kills, and retries each survivor, as in normal mode. Each mutant then gets a normal status, and the run has a score. `kill_matrix.target_mode` is `target-first` or `full`. For deterministic tests, both modes give the same `kills`, `unique_kills` and `target_only_kills` for each target.
 - `kill_matrix.targets` lists each target with the `test_ids` that it selects. A target that selects no test is `incomplete` with the reason `unmatched-target`, and the run goes on. The reason `not-a-test-file` means that the runner does not list the file. The reason `no-planned-code` means that the file reaches no planned code, for example a test that runs the code only in a child process. When no target selects a test, the run exits `2` with `FALLOW_MUTATION_TARGET_UNMATCHED`. When the dry run runs the file of no target, the run stops before the dry run. A test ID target that names a duplicate test ID (two tests of one file with the same title) exits `2` with `FALLOW_MUTATION_TARGET_DUPLICATE_TEST_ID`. A file target drops the duplicate IDs, and the `duplicate-test-ids` entry of `errors` names them.
 - Each target has its own `status` (`complete` or `incomplete`) and `reasons`. Only the tests of a complete target can be candidates. `candidates` can be nonempty while the top-level `status` is `incomplete`.
 - `kill_matrix.tests` has rows for target tests only. `unique_kills` are kills that no other test detects, target or not. `target_only_kills` lists kills that only other targets share, each with those `targets`. `subsuming_tests` is empty (note `subsumers-not-computed`).
@@ -2697,6 +2709,9 @@ Config files are searched in priority order: `.fallowrc.json` > `.fallowrc.jsonc
   // Rules accept an optional `allowTypeOnly: [zones]` list that admits type-only imports
   // (`import type`, inline `{ type Foo }`, namespace type imports, and `export type` re-exports)
   // to the listed zones even when not present in `allow`. Mixed-specifier imports still fire.
+  // A zone can list its public entry files: `"publicApi": ["src/billing/index.ts"]`. Other
+  // zones may then import only those files of the zone. On an autoDiscover zone, each glob
+  // is relative to each discovered folder: `"publicApi": ["index.ts"]`.
   "boundaries": {
     "preset": "bulletproof"
     // Or:
@@ -2809,8 +2824,11 @@ preset = "bulletproof"
 | `// fallow-ignore-next-line unused-export` | Suppress specific issue type |
 | `// fallow-ignore-file` | Suppress all issues in a file |
 | `// fallow-ignore-file unused-export` | Suppress specific issue type file-wide |
+| `// fallow-ignore-start code-duplication` ... `// fallow-ignore-end code-duplication` | Suppress clones only inside the range; a clone that reaches into it is cut at the border |
 
 The `/* */` and JSDoc `/** */` block forms work the same way. In a multi-line JSDoc comment, the marker can start any ` * ` line. A next-line marker in a block comment applies to the line after the closing `*/`. In a block comment, a line that starts with the marker word is a marker only when each target before an optional `-- reason` is an issue kind or looks like one (lowercase words joined by `-`). A wrapped prose line such as ` * fallow-ignore-next-line is how you hide a finding.` is not a marker. A block comment must start its line, and a single-line block comment must end its line. For `fallow dupes` and for Vue, Svelte, Astro, MDX, HTML and CSS files, a multi-line block comment must open with `/*` or `/**` alone on its line, or with the marker on that line. Markup files also accept `<!-- fallow-ignore-next-line -->` on one line.
+
+A range marker (`fallow-ignore-start`, `fallow-ignore-end`) must be on its own line and supports only `code-duplication`. The reason goes on the start marker. A range marker in a string or template literal does not count. `fallow dupes` reports a range marker with a problem (an end with no start, a nested start, a start with no end, no kind, another kind, or a marker that shares its line with code) in `range_marker_problems`, and `fallow suppressions` lists ranges with `level: "range"` and `end_line`.
 
 ### Valid Issue Type Tokens
 
