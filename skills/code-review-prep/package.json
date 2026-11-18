@@ -1,0 +1,8 @@
+{
+  "name": "code-review-prep",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test scripts/review-prep.test.ts"
+  }
+}

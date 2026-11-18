@@ -1,0 +1,5 @@
+interface:
+  display_name: "PR canvas scripts"
+  short_description: "Fetch, build and serve a PR review canvas"
+policy:
+  allow_implicit_invocation: false
