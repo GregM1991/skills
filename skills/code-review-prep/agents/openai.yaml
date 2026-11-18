@@ -1,0 +1,5 @@
+interface:
+  display_name: "Code review prep"
+  short_description: "Pin the fixed point and collect review inputs"
+policy:
+  allow_implicit_invocation: false

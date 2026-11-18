@@ -5,6 +5,11 @@
       "type": "append-if-missing",
       "target": "SKILL.md",
       "content": "standards-sources.md"
+    },
+    {
+      "type": "append-if-missing",
+      "target": "SKILL.md",
+      "content": "use-review-prep.md"
     }
   ]
 }
